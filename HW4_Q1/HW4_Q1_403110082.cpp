@@ -65,79 +65,76 @@ string multiply_HugeInt(string type, string number1, string number2)
 {
     string result = "0";
     int n1 = number1.size(), n2 = number2.size();
-    int x = 0; int y = number1.size() - 1;
-    while (x < y) {swap (number1[x++], number1[y--]);}
-    x = 0; y = number2.size() - 1;
-    while (x < y) {swap (number2[x++], number2[y--]);}
 
     if (type == "Decimal")
     {
-        for (int i = 0; i < n1; i++)
+        for (int i = n1 - 1; i >= 0; i--)
         {
             string temp_result = "";
             int left_over = 0;
             int digit1 = number1[i] - '0';
 
-            for (int j = 0; j < n2; j++)
+            for (int j = n2 - 1; j >= 0; j--)
             {
                 int digit2 = number2[j] - '0';
                 int product = left_over + digit1 * digit2;
                 left_over = product / 10;
-                temp_result += product % 10 + '0';
+                temp_result += (product % 10) + '0';
             }
 
-            if (left_over > 0) {temp_result += left_over + '0';}
-            x = 0; y = temp_result.size() - 1;
-            while (x < y) {swap (temp_result[x++], temp_result[y--]);}
-            for (int k = 0; k < i; k++) {temp_result += '0';}
+            if (left_over > 0) { temp_result += left_over + '0'; }
+
+            reverse(temp_result.begin(), temp_result.end());
+            temp_result.append(n1 - 1 - i, '0');
             result = add_HugeInt("Decimal", result, temp_result);
         }
     }
 
     if (type == "Binary")
     {
-        for (int i = 0; i < n1; i++)
+        for (int i = n1 - 1; i >= 0; i--)
         {
             string temp_result = "";
             int left_over = 0;
             int digit1 = number1[i] - '0';
 
-            for (int j = 0; j < n2; j++)
+            for (int j = n2 - 1; j >= 0; j--)
             {
                 int digit2 = number2[j] - '0';
                 int product = left_over + digit1 * digit2;
                 left_over = product / 2;
-                temp_result += product % 2 + '0';
+                temp_result += (product % 2) + '0';
             }
 
-            if (left_over > 0) {temp_result += left_over + '0';}
-            x = 0; y = temp_result.size() - 1;
-            while (x < y) {swap (temp_result[x++], temp_result[y--]);}
-            for (int k = 0; k < i; k++) {temp_result += '0';}
+            if (left_over > 0) { temp_result += left_over + '0'; }
+
+            reverse(temp_result.begin(), temp_result.end());
+            temp_result.append(n1 - 1 - i, '0');
             result = add_HugeInt("Binary", result, temp_result);
         }
     }
 
     if (type == "Hexadecimal")
     {
-        for (int i = 0; i < n1; i++)
+        for (int i = n1 - 1; i >= 0; i--)
         {
             string temp_result = "";
             int left_over = 0;
-            int digit1 = (isdigit(number1[i])) ? number1[i] - '0' : toupper(number1[i]) - 'A' + 10;
+            int digit1 = isdigit(number1[i]) ? number1[i] - '0' : toupper(number1[i]) - 'A' + 10;
 
-            for (int j = 0; j < n2; j++)
+            for (int j = n2 - 1; j >= 0; j--)
             {
-                int digit2 = (isdigit(number2[j])) ? number2[j] - '0' : toupper(number2[j]) - 'A' + 10;
+                int digit2 = isdigit(number2[j]) ? number2[j] - '0' : toupper(number2[j]) - 'A' + 10;
                 int product = left_over + digit1 * digit2;
                 left_over = product / 16;
                 int remainder = product % 16;
-                temp_result += (remainder < 10) ? remainder + '0' : remainder - 10 + 'A';            }
+                temp_result += (remainder < 10) ? remainder + '0' : remainder - 10 + 'A';
+            }
 
-            if (left_over > 0) {temp_result += (left_over < 10) ? left_over + '0' : left_over - 10 + 'A';}
-            x = 0; y = temp_result.size() - 1;
-            while (x < y) {swap (temp_result[x++], temp_result[y--]);}
-            for (int k = 0; k < i; k++) {temp_result += '0';}
+            if (left_over > 0) { temp_result += (left_over < 10) ? left_over + '0' : left_over - 10 + 'A'; }
+
+            reverse(temp_result.begin(), temp_result.end());
+            temp_result.append(n1 - 1 - i, '0');
             result = add_HugeInt("Hexadecimal", result, temp_result);
         }
     }
