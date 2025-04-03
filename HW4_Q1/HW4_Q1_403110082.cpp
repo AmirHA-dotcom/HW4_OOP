@@ -5,140 +5,83 @@
 
 using namespace std;
 
-string add_HugeInt (string type, string number1, string number2)
+string add_HugeInt (string& type, string& number1, string& number2)
 {
+    int base;
+    if (type == "Decimal") {base = 10;}
+    else if (type == "Binary") {base = 2;}
+    else if (type == "Hexadecimal") {base = 16;}
+
+    int n1 = number1.size(), n2 = number2.size();
+    int carry = 0;
+    vector<int> sum_result(max(n1,n2) + 1, 0);
+    int i = n1 - 1, j = n2 - 1, k = sum_result.size() - 1;
+
+    while (i >= 0 || j >= 0 || carry != 0)
+    {
+        int digit1 = 0, digit2 = 0;
+        if (i >=0 )
+        {
+            digit1 = isdigit(number1[i]) ? number1[i] - '0' : toupper(number1[i]) - 'A' + 10;
+            i--;
+        }
+        if (j >= 0)
+        {
+            digit2 = isdigit(number2[j]) ? number2[j] - '0' : toupper(number2[j]) - 'A' + 10;
+            j--;
+        }
+        int sum = carry + digit1 + digit2;
+        carry = sum / base;
+        sum_result[k--] = sum % base;
+    }
     string result;
-    int left_over = 0;
-    int i = number1.size() - 1;
-    int j = number2.size() - 1;
-    if (type == "Decimal")
-    {
-        while (i >= 0 || j >= 0 || left_over != 0)
-        {
-            int digit1 = (i >= 0) ? number1[i] - '0' : 0;
-            int digit2 = (j >= 0) ? number2[j] - '0' : 0;
-            int sum = left_over + digit1 + digit2;
-            left_over = sum / 10;
-            result += (sum % 10) + '0';
-            i--;
-            j--;
-        }
+    int start = (sum_result[0] == 0) ? 1 : 0;
+    for (i = start; i < sum_result.size(); i++) {
+        if (sum_result[i] < 10)
+            result += sum_result[i] + '0';
+        else
+            result += sum_result[i] - 10 + 'A';
     }
-
-    if (type == "Binary")
-    {
-        while (i >= 0 || j >= 0 || left_over != 0)
-        {
-            int digit1 = (i >= 0) ? number1[i] - '0' : 0;
-            int digit2 = (j >= 0) ? number2[j] - '0' : 0;
-            int sum = left_over + digit1 + digit2;
-            left_over = sum / 2;
-            result += (sum % 2) + '0';
-            i--;
-            j--;
-        }
-    }
-
-    if (type == "Hexadecimal")
-    {
-        while (i >= 0 || j >= 0 || left_over != 0)
-        {
-            int digit1 = (i >= 0) ? (isdigit(number1[i]) ? number1[i] - '0' : toupper(number1[i]) - 'A' + 10) : 0;
-            int digit2 = (j >= 0) ? (isdigit(number2[j]) ? number2[j] - '0' : toupper(number2[j]) - 'A' + 10) : 0;
-            int sum = digit1 + digit2 + left_over;
-            left_over = sum / 16;
-            int remainder = sum % 16;
-            result += (remainder < 10) ? remainder + '0' : remainder - 10 + 'A';
-            i--;
-            j--;
-        }
-    }
-    i = 0; j = result.size() - 1;
-    while (i < j)
-    {
-        swap (result[i++], result[j--]);
-    }
-    return result;
+    return result.empty() ? "0" : result;
 }
 
-string multiply_HugeInt(string type, string number1, string number2)
+string multiply_HugeInt(string& type, string& number1, string& number2)
 {
-    string result = "0";
+    int base;
+    if (type == "Decimal") {base = 10;}
+    else if (type == "Binary") {base = 2;}
+    else if (type == "Hexadecimal") {base = 16;}
+    if (number1 == "0" || number2 == "0") return "0";
+
     int n1 = number1.size(), n2 = number2.size();
+    int carry = 0;
+    vector<int> product(n1+n2, 0);
 
-    if (type == "Decimal")
+    for (int i = n1 - 1; i >= 0; i--)
     {
-        for (int i = n1 - 1; i >= 0; i--)
+        int digit1 = isdigit(number1[i]) ? number1[i] - '0' : toupper(number1[i]) - 'A' + 10;
+        for (int j = n2 - 1; j >= 0; j--)
         {
-            string temp_result = "";
-            int left_over = 0;
-            int digit1 = number1[i] - '0';
-
-            for (int j = n2 - 1; j >= 0; j--)
-            {
-                int digit2 = number2[j] - '0';
-                int product = left_over + digit1 * digit2;
-                left_over = product / 10;
-                temp_result += (product % 10) + '0';
-            }
-
-            if (left_over > 0) { temp_result += left_over + '0'; }
-
-            reverse(temp_result.begin(), temp_result.end());
-            temp_result.append(n1 - 1 - i, '0');
-            result = add_HugeInt("Decimal", result, temp_result);
+            int digit2 = isdigit(number2[j]) ? number2[j] - '0' : toupper(number2[j]) - 'A' + 10;
+            int sum = (digit1 * digit2) + product[i + j + 1];
+            product[i + j + 1] = sum % base;
+            product[i + j] += sum / base;
         }
     }
 
-    if (type == "Binary")
+    string result;
+    bool has_zero = true;
+    for (int number: product)
     {
-        for (int i = n1 - 1; i >= 0; i--)
-        {
-            string temp_result = "";
-            int left_over = 0;
-            int digit1 = number1[i] - '0';
+        if (has_zero && number == 0) continue;
+        has_zero = false;
 
-            for (int j = n2 - 1; j >= 0; j--)
-            {
-                int digit2 = number2[j] - '0';
-                int product = left_over + digit1 * digit2;
-                left_over = product / 2;
-                temp_result += (product % 2) + '0';
-            }
-
-            if (left_over > 0) { temp_result += left_over + '0'; }
-
-            reverse(temp_result.begin(), temp_result.end());
-            temp_result.append(n1 - 1 - i, '0');
-            result = add_HugeInt("Binary", result, temp_result);
-        }
+        if (number < 10)
+            result += number + '0';
+        else
+            result += number - 10 + 'A';
     }
-
-    if (type == "Hexadecimal")
-    {
-        for (int i = n1 - 1; i >= 0; i--)
-        {
-            string temp_result = "";
-            int left_over = 0;
-            int digit1 = isdigit(number1[i]) ? number1[i] - '0' : toupper(number1[i]) - 'A' + 10;
-
-            for (int j = n2 - 1; j >= 0; j--)
-            {
-                int digit2 = isdigit(number2[j]) ? number2[j] - '0' : toupper(number2[j]) - 'A' + 10;
-                int product = left_over + digit1 * digit2;
-                left_over = product / 16;
-                int remainder = product % 16;
-                temp_result += (remainder < 10) ? remainder + '0' : remainder - 10 + 'A';
-            }
-
-            if (left_over > 0) { temp_result += (left_over < 10) ? left_over + '0' : left_over - 10 + 'A'; }
-
-            reverse(temp_result.begin(), temp_result.end());
-            temp_result.append(n1 - 1 - i, '0');
-            result = add_HugeInt("Hexadecimal", result, temp_result);
-        }
-    }
-    return result;
+    return result.empty() ? "0" : result;
 }
 
 class HugeInt
@@ -212,16 +155,16 @@ int main()
 {
     vector<HugeInt> HugeInts;
     //regex create (R"(^create\s+(\w+)\s+as\s+(\w+)\s+(\w+)$)");
-    regex create (R"(^create\s+(\w+)\s+as\s+(\w+)\s+([01]+|[0-9A-Fa-f]+|\d+)$)");
-    regex plus (R"(^(\w+)\s*\+\s*(\w+)\s+in\s+(\w+)$)");
-    regex multiply (R"(^(\w+)\s*\*\s*(\w+)\s+in\s+(\w+)$)");
+    regex create (R"(^\s*create\s+(\w+)\s+as\s*(\w+)\s*([01]+|[0-9A-F]+|\d+)\s*$)");
+    regex plus (R"(^\s*(\w+)\s*\+\s*(\w+)\s*in\s*(\w+)\s*$)");
+    regex multiply (R"(^\s*(\w+)\s*\*\s*(\w+)\s*in\s*(\w+)\s*$)");
     smatch match;
     string command;
     while (true)
     {
         getline(cin, command);
 
-        if (command == "end")
+        if (command.find("end") != string::npos)
         {
             return 0;
         }
@@ -251,11 +194,11 @@ int main()
             if (name3_index == -1)
             {
                 HugeInts.emplace_back();
-                HugeInts.back().create_HugeInt_without_comment(name3, "template", "template");
+                HugeInts.back().create_HugeInt_without_comment(name3, "", "");
             }
             name3_index = HugeInt_index(name3, HugeInts);
 
-            HugeInts[name3_index].plus(HugeInts[name1_index].get_type(), HugeInts[name2_index].get_number(), HugeInts[name1_index].get_number());
+            HugeInts[name3_index].plus(HugeInts[name1_index].get_type(), HugeInts[name1_index].get_number(), HugeInts[name2_index].get_number());
         }
 
         if (regex_match(command, match, multiply))
@@ -273,11 +216,11 @@ int main()
             if (name3_index == -1)
             {
                 HugeInts.emplace_back();
-                HugeInts.back().create_HugeInt_without_comment(name3, "template", "template");
+                HugeInts.back().create_HugeInt_without_comment(name3, "", "");
             }
             name3_index = HugeInt_index(name3, HugeInts);
 
-            HugeInts[name3_index].multiply(HugeInts[name1_index].get_type(), HugeInts[name2_index].get_number(), HugeInts[name1_index].get_number());
+            HugeInts[name3_index].multiply(HugeInts[name1_index].get_type(), HugeInts[name1_index].get_number(), HugeInts[name2_index].get_number());
         }
     }
 }
