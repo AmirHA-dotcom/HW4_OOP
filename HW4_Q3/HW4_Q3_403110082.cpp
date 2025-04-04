@@ -30,6 +30,7 @@ private:
     string last_name;
     string ID;
     string phone_number;
+    int length_of_stay;
 public:
     void register_guest(string& first_name, string& last_name, string& ID, string& phone_number)
     {
@@ -37,11 +38,17 @@ public:
         this->last_name = last_name;
         this->ID = ID;
         this->phone_number = phone_number;
+        this->length_of_stay = 0;
+    }
+    void set_length_of_stay(int& length_of_stay)
+    {
+        this->length_of_stay = length_of_stay;
     }
     string get_first_name() {return first_name;}
     string get_last_name() {return last_name;}
     string get_ID() {return ID;}
     string get_phone_number() {return phone_number;}
+    int get_length_of_stay() {return length_of_stay;}
 };
 
 class Service
@@ -75,6 +82,10 @@ public:
     string get_room_ID() {return room_ID;}
     string get_type() {return type;}
     int get_beds_count() {return beds_count;}
+    void assign_guest(string resident)
+    {
+        this->resident = resident;
+    }
     void empty_room() {resident.clear();}
     string get_resident() {return resident;}
 };
@@ -261,6 +272,48 @@ public:
         rooms.erase(rooms.begin() + i);
         cout << "room " << rooms[i].get_room_ID() << " with type of" << rooms[i].get_type() << "has been removed successfully" << endl;
     }
+
+    static void check_in_with_reservation(vector<Guest>& guests, string& first_name, string& last_name, string& guest_ID, vector<Room>& rooms, string& room_ID, int length_of_stay)
+    {
+        bool guest_found = false;
+        int guest_index = 0;
+        for (guest_index = 0; guest_index < guests.size(); guest_index++)
+        {
+            if (guests[guest_index].get_first_name() == first_name && guests[guest_index].get_last_name() == last_name && guests[guest_index].get_ID() == guest_ID)
+            {
+                guest_found = true;
+                break;
+            }
+        }
+        if (!guest_found)
+        {
+            cout << "guest " << first_name << " " << last_name << " with ID " << guest_ID << " has not been registered yet" << endl;
+            return;
+        }
+        bool room_found = false;
+        int room_index = 0;
+        for (room_index = 0; room_index < rooms.size(); room_index++)
+        {
+            if (rooms[room_index].get_room_ID() == room_ID)
+            {
+                room_found = true;
+                break;
+            }
+        }
+        if (!room_found)
+        {
+            cout << "room " << room_ID << " does not exist" << endl;
+            return;
+        }
+        if (!rooms[room_index].get_resident().empty())
+        {
+            cout << "room " << rooms[room_index].get_room_ID() << " is not empty" << endl;
+            return;
+        }
+        rooms[room_index].assign_guest(guests[guest_index].get_ID());
+        guests[guest_index].set_length_of_stay(length_of_stay);
+        cout << "guest " << guests[guest_index].get_first_name() << "" "" << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked in successfully" << endl;
+    }
 };
 
 int main ()
@@ -275,6 +328,7 @@ int main ()
     regex remove_service_pattern ("^remove service (\\w+) by manager (\\w+)$");
     regex add_room_pattern (R"(^add room (\w+) (\w+) (\d+) by manager (\w+)$)");
     regex remove_room_pattern ("^remove room (\\w+) by manager (\\w+)$");
+    regex check_in_with_reservation_pattern (R"(^check in guest (\w+) (\w+) (\w+) in room (\w+) for (\d+) nights$)");
     smatch match;
 
     string command;
@@ -338,6 +392,17 @@ int main ()
             string room_ID = match[1];
             string manager_ID = match[2];
             Controller::remove_room(rooms, room_ID, managers, manager_ID);
+            continue;
+        }
+
+        if (regex_match(command, match, check_in_with_reservation_pattern))
+        {
+            string first_name = match[1];
+            string last_name = match[2];
+            string guest_ID = match[3];
+            string room_ID = match[4];
+            int length_of_stay = stoi(match[5]);
+            Controller::check_in_with_reservation(guests, first_name, last_name, guest_ID, rooms, room_ID, length_of_stay);
             continue;
         }
     }
