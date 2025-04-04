@@ -75,14 +75,14 @@ public:
     string get_room_ID() {return room_ID;}
     string get_type() {return type;}
     int get_beds_count() {return beds_count;}
-    void empty_room() {resident = "";}
+    void empty_room() {resident.clear();}
     string get_resident() {return resident;}
 };
 
 class Controller
 {
 public:
-    void register_manager(vector<Manager>& managers, Manager& manager, string& first_name, string& last_name, string& ID)
+    static void register_manager(vector<Manager>& managers, Manager& manager, string& first_name, string& last_name, string& ID)
     {
         for (Manager& m: managers)
         {
@@ -97,7 +97,7 @@ public:
         cout << "manager " << manager.get_first_name() << " " << manager.get_last_name() << " has been registered successfully" << endl;
     }
 
-    void register_guest(vector<Guest>& guests, Guest& guest, string& first_name, string& last_name, string& ID, string& phone_number)
+    static void register_guest(vector<Guest>& guests, Guest& guest, string& first_name, string& last_name, string& ID, string& phone_number)
     {
         for (Guest& g: guests)
         {
@@ -112,7 +112,7 @@ public:
         cout << "guest " << ID << " has been registered successfully" << endl;
      }
 
-    void add_service(vector<Service>& services, Service& service, string& service_name, vector<Manager>& managers, string& manager_ID)
+    static void add_service(vector<Service>& services, Service& service, string& service_name, vector<Manager>& managers, string& manager_ID)
     {
         bool manager_ID_found = false;
         for (Manager m: managers)
@@ -148,7 +148,7 @@ public:
         cout << "service " << service_name << " has been added successfully" << endl;
     }
 
-    void remove_service(vector<Service>& services, string& service_name, vector<Manager>& managers, string& manager_ID)
+    static void remove_service(vector<Service>& services, string& service_name, vector<Manager>& managers, string& manager_ID)
     {
         bool manager_ID_found = false;
         for (Manager m: managers)
@@ -184,7 +184,7 @@ public:
         cout << "service " << service_name << " has been removed successfully" << endl;
     }
 
-    void add_room(vector<Room>& rooms, Room& room, string& room_ID, string& room_type, int& beds_count, vector<Manager>& managers, string& manager_ID)
+    static void add_room(vector<Room>& rooms, Room& room, string& room_ID, string& room_type, int& beds_count, vector<Manager>& managers, string& manager_ID)
     {
         bool manager_ID_found = false;
         for (Manager m: managers)
@@ -220,7 +220,7 @@ public:
         cout << "room "<< room_ID <<" with type of " << room_type << " has been added successfully" << endl;
     }
 
-    void remove_room(vector<Room>& rooms, string& room_ID, vector<Manager>& managers, string& manager_ID)
+    static void remove_room(vector<Room>& rooms, string& room_ID, vector<Manager>& managers, string& manager_ID)
     {
         bool manager_ID_found = false;
         for (Manager m: managers)
@@ -263,15 +263,12 @@ public:
     }
 };
 
-
 int main ()
 {
-    Controller controller;
     vector<Manager> managers;
     vector<Guest> guests;
     vector<Service> services;
     vector<Room> rooms;
-
     regex register_manager_pattern (R"(^register manager (\w+) (\w+) with ID (\w+)$)");
     regex register_guest_pattern (R"(^register guest (\w+) (\w+) with ID (\w+) and phone number (\w+)$)");
     regex add_service_pattern ("^add service (\\w+) by manager (\\w+)$");
@@ -293,7 +290,7 @@ int main ()
             string last_name = match[2];
             string ID = match[3];
             Manager new_manager;
-            controller.register_manager(managers, new_manager, first_name, last_name, ID);
+            Controller::register_manager(managers, new_manager, first_name, last_name, ID);
             continue;
         }
 
@@ -304,7 +301,7 @@ int main ()
             string ID = match[3];
             string phone_number = match[4];
             Guest new_guest;
-            controller.register_guest(guests, new_guest, first_name, last_name, ID, phone_number);
+            Controller::register_guest(guests, new_guest, first_name, last_name, ID, phone_number);
             continue;
         }
 
@@ -313,7 +310,7 @@ int main ()
             string service_name = match[1];
             string manager_ID = match[2];
             Service new_service;
-            controller.add_service(services, new_service, service_name, managers, manager_ID);
+            Controller::add_service(services, new_service, service_name, managers, manager_ID);
             continue;
         }
 
@@ -321,7 +318,7 @@ int main ()
         {
             string service_name = match[1];
             string manager_ID = match[2];
-            controller.remove_service(services, service_name, managers, manager_ID);
+            Controller::remove_service(services, service_name, managers, manager_ID);
             continue;
         }
 
@@ -332,7 +329,7 @@ int main ()
             int beds_count = stoi(match[3]);
             string manger_ID = match[4];
             Room new_room;
-            controller.add_room(rooms, new_room, room_ID, room_type, beds_count, managers, manger_ID);
+            Controller::add_room(rooms, new_room, room_ID, room_type, beds_count, managers, manger_ID);
             continue;
         }
 
@@ -340,13 +337,7 @@ int main ()
         {
             string room_ID = match[1];
             string manager_ID = match[2];
-            controller.remove_room(rooms, room_ID, managers, manager_ID);
-            //debug
-            int i =0;
-            for (Room r: rooms)
-            {
-                cout << ++i << ": " << r.get_room_ID() << "_" << r.get_type() << "_" << r.get_beds_count() << "_" << r.get_resident() << endl;
-            }
+            Controller::remove_room(rooms, room_ID, managers, manager_ID);
             continue;
         }
     }
