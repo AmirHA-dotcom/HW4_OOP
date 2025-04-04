@@ -71,6 +71,8 @@ private:
     string type;
     int beds_count;
     string resident;
+    bool special_services_included;
+    int price;
 public:
     void add_room(string& room_ID, string& type, int& beds_count)
     {
@@ -78,6 +80,8 @@ public:
         this->type = type;
         this->beds_count = beds_count;
         this->resident = "";
+        this->special_services_included = false;
+        this->price = 0;
     }
     string get_room_ID() {return room_ID;}
     string get_type() {return type;}
@@ -88,6 +92,10 @@ public:
     }
     void empty_room() {resident.clear();}
     string get_resident() {return resident;}
+    void add_special_services()
+    {
+        special_services_included = true;
+    }
 };
 
 class Controller
@@ -314,6 +322,31 @@ public:
         guests[guest_index].set_length_of_stay(length_of_stay);
         cout << "guest " << guests[guest_index].get_first_name() << "" "" << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked in successfully" << endl;
     }
+
+    static void check_in_without_reservation(vector<Guest>& guests, string& first_name, string& last_name, string& guest_ID, int& length_of_stay)
+    {
+        bool guest_found = false;
+        int guest_index = 0;
+        for (guest_index = 0; guest_index < guests.size(); guest_index++)
+        {
+            if (guests[guest_index].get_first_name() == first_name && guests[guest_index].get_last_name() == last_name && guests[guest_index].get_ID() == guest_ID)
+            {
+                guest_found = true;
+                break;
+            }
+        }
+        if (!guest_found)
+        {
+            cout << "guest " << first_name << " " << last_name << " with ID " << guest_ID << " has not been registered yet" << endl;
+            return;
+        }
+        
+    }
+
+    static void sort_lexicographically(vector<Room>& rooms)
+    {
+        sort (rooms.begin(), rooms.end(), [](Room &a, Room &b) {return a.get_room_ID() < b.get_room_ID();});
+    }
 };
 
 int main ()
@@ -329,6 +362,7 @@ int main ()
     regex add_room_pattern (R"(^add room (\w+) (\w+) (\d+) by manager (\w+)$)");
     regex remove_room_pattern ("^remove room (\\w+) by manager (\\w+)$");
     regex check_in_with_reservation_pattern (R"(^check in guest (\w+) (\w+) (\w+) in room (\w+) for (\d+) nights$)");
+    regex check_in_without_reservation_pattern (R"(^check in guest (\w+) (\w+) (\w+) for (\d+) nights$)");
     smatch match;
 
     string command;
@@ -384,6 +418,7 @@ int main ()
             string manger_ID = match[4];
             Room new_room;
             Controller::add_room(rooms, new_room, room_ID, room_type, beds_count, managers, manger_ID);
+            Controller::sort_lexicographically(rooms);
             continue;
         }
 
