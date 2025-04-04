@@ -57,6 +57,28 @@ public:
     string get_service_name() {return service_name;}
 };
 
+class Room
+{
+private:
+    string room_ID;
+    string type;
+    int beds_count;
+    string resident;
+public:
+    void add_room(string& room_ID, string& type, int& beds_count)
+    {
+        this->room_ID = room_ID;
+        this->type = type;
+        this->beds_count = beds_count;
+        this->resident = "";
+    }
+    string get_room_ID() {return room_ID;}
+    string get_type() {return type;}
+    int get_beds_count() {return beds_count;}
+    void empty_room() {resident = "";}
+    string get_resident() {return resident;}
+};
+
 class Controller
 {
 public:
@@ -161,6 +183,84 @@ public:
         services.erase(services.begin() + i);
         cout << "service " << service_name << " has been removed successfully" << endl;
     }
+
+    void add_room(vector<Room>& rooms, Room& room, string& room_ID, string& room_type, int& beds_count, vector<Manager>& managers, string& manager_ID)
+    {
+        bool manager_ID_found = false;
+        for (Manager m: managers)
+        {
+            if (m.get_ID() == manager_ID)
+            {
+                manager_ID_found = true;
+                break;
+            }
+        }
+        if (!manager_ID_found)
+        {
+            cout << "manager " << manager_ID << " is not registered" << endl;
+            return;
+        }
+
+        bool room_ID_found = false;
+        for (Room r: rooms)
+        {
+            if (r.get_room_ID() == room_ID)
+            {
+                room_ID_found = true;
+                break;
+            }
+        }
+        if (room_ID_found)
+        {
+            cout << "room " << room_ID << " has been added already" << endl;
+            return;
+        }
+        room.add_room(room_ID, room_type, beds_count);
+        rooms.push_back(room);
+        cout << "room "<< room_ID <<" with type of " << room_type << " has been added successfully" << endl;
+    }
+
+    void remove_room(vector<Room>& rooms, string& room_ID, vector<Manager>& managers, string& manager_ID)
+    {
+        bool manager_ID_found = false;
+        for (Manager m: managers)
+        {
+            if (m.get_ID() == manager_ID)
+            {
+                manager_ID_found = true;
+                break;
+            }
+        }
+        if (!manager_ID_found)
+        {
+            cout << "manager " << manager_ID << " is not registered" << endl;
+            return;
+        }
+
+        bool room_ID_found = false;
+        int i = 0;
+        for (i = 0; i < rooms.size(); i++)
+        {
+            if (rooms[i].get_room_ID() == room_ID)
+            {
+                room_ID_found = true;
+                break;
+            }
+        }
+        if (!room_ID_found)
+        {
+            cout << "room " << room_ID << " does not exist" << endl;
+            return;
+        }
+
+        if (!rooms[i].get_resident().empty())
+        {
+            cout << "room " << rooms[i].get_room_ID() << " is not empty" << endl;
+            return;
+        }
+        rooms.erase(rooms.begin() + i);
+        cout << "room " << rooms[i].get_room_ID() << " with type of" << rooms[i].get_type() << "has been removed successfully" << endl;
+    }
 };
 
 
@@ -170,11 +270,14 @@ int main ()
     vector<Manager> managers;
     vector<Guest> guests;
     vector<Service> services;
+    vector<Room> rooms;
 
     regex register_manager_pattern (R"(^register manager (\w+) (\w+) with ID (\w+)$)");
     regex register_guest_pattern (R"(^register guest (\w+) (\w+) with ID (\w+) and phone number (\w+)$)");
     regex add_service_pattern ("^add service (\\w+) by manager (\\w+)$");
     regex remove_service_pattern ("^remove service (\\w+) by manager (\\w+)$");
+    regex add_room_pattern (R"(^add room (\w+) (\w+) (\d+) by manager (\w+)$)");
+    regex remove_room_pattern ("^remove room (\\w+) by manager (\\w+)$");
     smatch match;
 
     string command;
@@ -219,6 +322,31 @@ int main ()
             string service_name = match[1];
             string manager_ID = match[2];
             controller.remove_service(services, service_name, managers, manager_ID);
+            continue;
+        }
+
+        if (regex_match(command, match, add_room_pattern))
+        {
+            string room_ID = match[1];
+            string room_type = match[2];
+            int beds_count = stoi(match[3]);
+            string manger_ID = match[4];
+            Room new_room;
+            controller.add_room(rooms, new_room, room_ID, room_type, beds_count, managers, manger_ID);
+            continue;
+        }
+
+        if (regex_match(command, match, remove_room_pattern))
+        {
+            string room_ID = match[1];
+            string manager_ID = match[2];
+            controller.remove_room(rooms, room_ID, managers, manager_ID);
+            //debug
+            int i =0;
+            for (Room r: rooms)
+            {
+                cout << ++i << ": " << r.get_room_ID() << "_" << r.get_type() << "_" << r.get_beds_count() << "_" << r.get_resident() << endl;
+            }
             continue;
         }
     }
