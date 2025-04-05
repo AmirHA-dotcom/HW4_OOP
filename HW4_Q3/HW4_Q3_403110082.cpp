@@ -31,6 +31,7 @@ private:
     string ID;
     string phone_number;
     int length_of_stay;
+    string room_ID;
 public:
     void register_guest(string& first_name, string& last_name, string& ID, string& phone_number)
     {
@@ -49,6 +50,12 @@ public:
     string get_ID() {return ID;}
     string get_phone_number() {return phone_number;}
     int get_length_of_stay() {return length_of_stay;}
+    void assign_room  (string room_ID)
+    {
+        this->room_ID = room_ID;
+    }
+    string get_room_ID() {return room_ID;}
+    void check_out() {room_ID.clear();}
 };
 
 class Service
@@ -85,7 +92,7 @@ public:
     }
     string get_room_ID() {return room_ID;}
     string get_type() {return type;}
-    int get_beds_count() {return beds_count;}
+    int get_beds_count() const {return beds_count;}
     void assign_guest(string resident)
     {
         this->resident = resident;
@@ -96,6 +103,12 @@ public:
     {
         special_services_included = true;
     }
+    void set_price(int& price)
+    {
+        this->price = price;
+    }
+    int get_price() const {return price;}
+    bool has_special_services() const {return special_services_included;}
 };
 
 class Controller
@@ -278,7 +291,7 @@ public:
             return;
         }
         rooms.erase(rooms.begin() + i);
-        cout << "room " << rooms[i].get_room_ID() << " with type of" << rooms[i].get_type() << "has been removed successfully" << endl;
+        cout << "room " << rooms[i].get_room_ID() << " with type of " << rooms[i].get_type() << " has been removed successfully" << endl;
     }
 
     static void check_in_with_reservation(vector<Guest>& guests, string& first_name, string& last_name, string& guest_ID, vector<Room>& rooms, string& room_ID, int length_of_stay)
@@ -320,10 +333,11 @@ public:
         }
         rooms[room_index].assign_guest(guests[guest_index].get_ID());
         guests[guest_index].set_length_of_stay(length_of_stay);
+        guests[guest_index].assign_room(room_ID);
         cout << "guest " << guests[guest_index].get_first_name() << "" "" << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked in successfully" << endl;
     }
 
-    static void check_in_without_reservation(vector<Guest>& guests, string& first_name, string& last_name, string& guest_ID, int& length_of_stay)
+    static void check_in_without_reservation(vector<Guest>& guests, string& first_name, string& last_name, string& guest_ID, int& length_of_stay, vector<Room>& rooms)
     {
         bool guest_found = false;
         int guest_index = 0;
@@ -340,12 +354,72 @@ public:
             cout << "guest " << first_name << " " << last_name << " with ID " << guest_ID << " has not been registered yet" << endl;
             return;
         }
-        
+        int room_index = -1;
+        bool no_room_available = true;
+        for (room_index = 0; room_index < rooms.size(); room_index++)
+        {
+            if (rooms[room_index].get_resident().empty())
+            {
+                no_room_available = false;
+                break;
+            }
+        }
+        if (no_room_available)
+        {
+            cout << "there are no empty rooms" << endl;
+            return;
+        }
+        rooms[room_index].assign_guest(guests[guest_index].get_ID());
+        guests[guest_index].set_length_of_stay(length_of_stay);
+        guests[guest_index].assign_room(rooms[room_index].get_room_ID());
+        cout << "guest " << guests[guest_index].get_first_name() << " " << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked into room " << rooms[room_index].get_room_ID() << endl;
     }
 
-    static void sort_lexicographically(vector<Room>& rooms)
+    static void sort_rooms(vector<Room>& rooms)
     {
-        sort (rooms.begin(), rooms.end(), [](Room &a, Room &b) {return a.get_room_ID() < b.get_room_ID();});
+        sort(rooms.begin(), rooms.end(), [](Room& a, Room& b) 
+        {
+            if (a.has_special_services() != b.has_special_services())
+                return !a.has_special_services();
+
+            if (a.get_price() != b.get_price())
+                return a.get_price() < b.get_price();
+
+            return a.get_room_ID() < b.get_room_ID();
+        });    
+    }
+
+    static void check_out(vector<Room>& rooms, vector<Guest>& guests, string& first_name, string& last_name, string& guest_ID)
+    {
+        bool guest_found = false;
+        int guest_index = 0;
+        for (guest_index = 0; guest_index < guests.size(); guest_index++)
+        {
+            if (guests[guest_index].get_first_name() == first_name && guests[guest_index].get_last_name() == last_name && guests[guest_index].get_ID() == guest_ID)
+            {
+                guest_found = true;
+                break;
+            }
+        }
+        if (!guest_found)
+        {
+            cout << "guest " << first_name << " " << last_name << " with ID " << guest_ID << " has not been registered yet" << endl;
+            return;
+        }
+        if (guests[guest_index].get_room_ID().empty())
+        {
+            cout << "person " << guests[guest_index].get_ID() << " is not a guest" << endl;
+            return;
+        }
+        int room_index = -1;
+        for (room_index = 0; room_index < rooms.size(); room_index++)
+        {
+            if (rooms[room_index].get_room_ID() == guests[guest_index].get_room_ID())
+                break;
+        }
+        rooms[room_index].empty_room();
+        guests[guest_index].check_out();
+        cout << "guest with ID " << guests[guest_index].get_ID() << " has checked out with a cost of " << rooms[room_index].get_price() << endl;
     }
 };
 
@@ -363,6 +437,7 @@ int main ()
     regex remove_room_pattern ("^remove room (\\w+) by manager (\\w+)$");
     regex check_in_with_reservation_pattern (R"(^check in guest (\w+) (\w+) (\w+) in room (\w+) for (\d+) nights$)");
     regex check_in_without_reservation_pattern (R"(^check in guest (\w+) (\w+) (\w+) for (\d+) nights$)");
+    regex check_out_pattern (R"(^check out guest (\w+) (\w+) (\w+)$)");
     smatch match;
 
     string command;
@@ -418,7 +493,7 @@ int main ()
             string manger_ID = match[4];
             Room new_room;
             Controller::add_room(rooms, new_room, room_ID, room_type, beds_count, managers, manger_ID);
-            Controller::sort_lexicographically(rooms);
+            Controller::sort_rooms(rooms);
             continue;
         }
 
@@ -438,6 +513,25 @@ int main ()
             string room_ID = match[4];
             int length_of_stay = stoi(match[5]);
             Controller::check_in_with_reservation(guests, first_name, last_name, guest_ID, rooms, room_ID, length_of_stay);
+            continue;
+        }
+
+        if (regex_match(command, match, check_in_without_reservation_pattern))
+        {
+            string first_name = match[1];
+            string last_name = match[2];
+            string guest_ID = match[3];
+            int length_of_stay = stoi(match[4]);
+            Controller::check_in_without_reservation(guests, first_name, last_name, guest_ID, length_of_stay, rooms);
+            continue;
+        }
+
+        if (regex_match(command, match, check_out_pattern))
+        {
+            string first_name = match[1];
+            string last_name = match[2];
+            string guest_ID = match[3];
+            Controller::check_out(rooms, guests, first_name, last_name, guest_ID);
             continue;
         }
     }
