@@ -23,6 +23,27 @@ public:
     string get_ID() {return ID;}
 };
 
+class Service
+{
+private:
+    string service_name;
+    bool special;
+public:
+    void create_service(string& service_name)
+    {
+        this->service_name = service_name;
+        this->special = false;
+    }
+
+    string get_service_name() {return service_name;}
+    void make_special()
+    {
+        special = true;
+    }
+    bool is_special() const { return special;}
+};
+
+
 class Guest
 {
 private:
@@ -32,6 +53,7 @@ private:
     string phone_number;
     int length_of_stay;
     string room_ID;
+    vector<Service> services_used;
 public:
     void register_guest(string& first_name, string& last_name, string& ID, string& phone_number)
     {
@@ -49,26 +71,17 @@ public:
     string get_last_name() {return last_name;}
     string get_ID() {return ID;}
     string get_phone_number() {return phone_number;}
-    int get_length_of_stay() {return length_of_stay;}
+    int get_length_of_stay() const {return length_of_stay;}
     void assign_room  (string room_ID)
     {
         this->room_ID = room_ID;
     }
     string get_room_ID() {return room_ID;}
     void check_out() {room_ID.clear();}
-};
-
-class Service
-{
-private:
-    string service_name;
-public:
-    void create_service(string& service_name)
+    void use_service(Service service)
     {
-        this->service_name = service_name;
+        services_used.push_back(service);
     }
-
-    string get_service_name() {return service_name;}
 };
 
 class Room
@@ -294,7 +307,7 @@ public:
         cout << "room " << rooms[i].get_room_ID() << " with type of " << rooms[i].get_type() << " has been removed successfully" << endl;
     }
 
-    static void check_in_with_reservation(vector<Guest>& guests, string& first_name, string& last_name, string& guest_ID, vector<Room>& rooms, string& room_ID, int length_of_stay)
+    static void check_in_with_reservation(vector<Guest>& guests, string& first_name, string& last_name, string& guest_ID, vector<Room>& rooms, string& room_ID, int& length_of_stay)
     {
         bool guest_found = false;
         int guest_index = 0;
@@ -421,6 +434,47 @@ public:
         guests[guest_index].check_out();
         cout << "guest with ID " << guests[guest_index].get_ID() << " has checked out with a cost of " << rooms[room_index].get_price() << endl;
     }
+
+    static void use_service(vector<Service>& services, string& service_name, vector<Guest>& guests, string& guest_ID)
+    {
+        bool guest_found = false;
+        int guest_index = 0;
+        for (guest_index = 0; guest_index < guests.size(); guest_index++)
+        {
+            if (guests[guest_index].get_ID() == guest_ID)
+            {
+                guest_found = true;
+                break;
+            }
+        }
+        if (!guest_found)
+        {
+            cout << "guest with ID " << guest_ID << " has not been registered or checked in yet" << endl;
+            return;
+        }
+        if (guests[guest_index].get_room_ID().empty())
+        {
+            cout << "guest with ID " << guest_ID << " has not been registered or checked in yet" << endl;
+            return;
+        }
+        bool service_found = false;
+        int service_index = 0;
+        for (service_index = 0; service_index < services.size(); service_index++)
+        {
+            if (services[service_index].get_service_name() == service_name)
+            {
+                service_found = true;
+                break;
+            }
+        }
+        if (!service_found)
+        {
+            cout << "service " << service_name << " does not exist" << endl;
+            return;
+        }
+        guests[guest_index].use_service(services[service_index]);
+        cout << "guest " << guests[guest_index].get_ID() << " has used the service " << services[service_index].get_service_name() << " successfully" << endl;
+    }
 };
 
 int main ()
@@ -438,6 +492,7 @@ int main ()
     regex check_in_with_reservation_pattern (R"(^check in guest (\w+) (\w+) (\w+) in room (\w+) for (\d+) nights$)");
     regex check_in_without_reservation_pattern (R"(^check in guest (\w+) (\w+) (\w+) for (\d+) nights$)");
     regex check_out_pattern (R"(^check out guest (\w+) (\w+) (\w+)$)");
+    regex use_services_pattern ("^use service (\\w+) by guest (\\w+)$");
     smatch match;
 
     string command;
@@ -532,6 +587,14 @@ int main ()
             string last_name = match[2];
             string guest_ID = match[3];
             Controller::check_out(rooms, guests, first_name, last_name, guest_ID);
+            continue;
+        }
+
+        if (regex_match(command, match, use_services_pattern))
+        {
+            string service_name = match[1];
+            string guest_ID = match[2];
+            Controller::use_service(services, service_name, guests, guest_ID);
             continue;
         }
     }
