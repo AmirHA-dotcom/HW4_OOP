@@ -82,6 +82,7 @@ public:
     {
         services_used.push_back(service);
     }
+    vector<Service> get_used_services() {return services_used;}
 };
 
 class Room
@@ -93,6 +94,7 @@ private:
     string resident;
     bool special_services_included;
     int price;
+    int total_income;
 public:
     void add_room(string& room_ID, string& type, int& beds_count)
     {
@@ -102,6 +104,7 @@ public:
         this->resident = "";
         this->special_services_included = false;
         this->price = 0;
+        this->total_income = 0;
     }
     string get_room_ID() {return room_ID;}
     string get_type() {return type;}
@@ -122,6 +125,7 @@ public:
     }
     int get_price() const {return price;}
     bool has_special_services() const {return special_services_included;}
+    int get_total_income() const {return total_income;}
 };
 
 class Controller
@@ -347,7 +351,7 @@ public:
         rooms[room_index].assign_guest(guests[guest_index].get_ID());
         guests[guest_index].set_length_of_stay(length_of_stay);
         guests[guest_index].assign_room(room_ID);
-        cout << "guest " << guests[guest_index].get_first_name() << "" "" << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked in successfully" << endl;
+        cout << "guest " << guests[guest_index].get_first_name() << " " << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked in successfully" << endl;
     }
 
     static void check_in_without_reservation(vector<Guest>& guests, string& first_name, string& last_name, string& guest_ID, int& length_of_stay, vector<Room>& rooms)
@@ -475,6 +479,59 @@ public:
         guests[guest_index].use_service(services[service_index]);
         cout << "guest " << guests[guest_index].get_ID() << " has used the service " << services[service_index].get_service_name() << " successfully" << endl;
     }
+
+    static void show_guest_INFO(vector<Guest>& guests, string& guest_ID)
+    {
+        bool guest_found = false;
+        int guest_index = 0;
+        for (guest_index = 0; guest_index < guests.size(); guest_index++)
+        {
+            if (guests[guest_index].get_ID() == guest_ID)
+            {
+                guest_found = true;
+                break;
+            }
+        }
+        if (!guest_found)
+        {
+            cout << "guest " << guest_ID << " has not been registered yet" << endl;
+            return;
+        }
+        Guest guest = guests[guest_index];
+        cout << "name: " << guest.get_first_name() << " " << guest.get_last_name() << endl;
+        cout << "phone number: " << guest.get_phone_number() << endl;
+        cout << "ID number: " << guest.get_ID() << endl;
+        cout << "length of stay: " << guest.get_length_of_stay() << endl;
+        cout << "used services: " << guest.get_used_services().size() << endl;
+    }
+
+    static void show_room_INFO(vector<Room>& rooms, string& room_ID)
+    {
+        bool room_found = false;
+        int room_index = 0;
+        for (room_index = 0; room_index < rooms.size(); room_index++)
+        {
+            if (rooms[room_index].get_room_ID() == room_ID)
+            {
+                room_found = true;
+                break;
+            }
+        }
+        if (!room_found)
+        {
+            cout << "room " << room_ID << " does not exist" << endl;
+            return;
+        }
+        Room room = rooms[room_index];
+        cout << "ID number: " << room.get_room_ID() << endl;
+        cout << "type: " << room.get_type() << endl;
+        cout << "number of beds: " << room.get_beds_count() << endl;
+        cout << "total income: " << room.get_total_income() << endl;
+        if (room.get_resident().empty())
+            cout << "empty" << endl;
+        else
+            cout << room.get_resident() << endl;
+    }
 };
 
 int main ()
@@ -493,6 +550,8 @@ int main ()
     regex check_in_without_reservation_pattern (R"(^check in guest (\w+) (\w+) (\w+) for (\d+) nights$)");
     regex check_out_pattern (R"(^check out guest (\w+) (\w+) (\w+)$)");
     regex use_services_pattern ("^use service (\\w+) by guest (\\w+)$");
+    regex show_guest_INFO_pattern ("^show guest information (\\w+)$");
+    regex show_room_INFO_pattern ("^show room information (\\w+)$");
     smatch match;
 
     string command;
@@ -595,6 +654,20 @@ int main ()
             string service_name = match[1];
             string guest_ID = match[2];
             Controller::use_service(services, service_name, guests, guest_ID);
+            continue;
+        }
+
+        if (regex_match(command, match, show_guest_INFO_pattern))
+        {
+            string guest_ID = match[1];
+            Controller::show_guest_INFO(guests, guest_ID);
+            continue;
+        }
+
+        if (regex_match(command, match, show_room_INFO_pattern))
+        {
+            string room_ID = match[1];
+            Controller::show_room_INFO(rooms, room_ID);
             continue;
         }
     }
