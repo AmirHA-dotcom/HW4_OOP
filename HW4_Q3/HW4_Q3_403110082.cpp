@@ -96,6 +96,7 @@ private:
     string special_service;
     int price;
     int total_income;
+    int check_in_count;
 public:
     void add_room(string& room_ID, string& type, int& beds_count)
     {
@@ -104,6 +105,7 @@ public:
         this->beds_count = beds_count;
         this->resident = "";
         this->total_income = 0;
+        this->check_in_count = 0;
         if (type == "Coffin Retreat")
         {
             this->price = 50;
@@ -141,20 +143,14 @@ public:
     void assign_guest(string resident)
     {
         this->resident = resident;
+        check_in_count++;
     }
     void empty_room() {resident.clear();}
     string get_resident() {return resident;}
-    void add_special_services()
-    {
-        special_services_included = true;
-    }
-    void set_price(int& price)
-    {
-        this->price = price;
-    }
     int get_price() const {return price;}
     bool has_special_services() const {return special_services_included;}
     int get_total_income() const {return total_income;}
+    int get_check_in_count() const {return check_in_count;}
 };
 
 class Controller
@@ -564,7 +560,7 @@ public:
 
     static void show_most_popular_room(vector<Room>& rooms)
     {
-
+        fo
     }
 };
 
