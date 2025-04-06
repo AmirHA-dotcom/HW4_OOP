@@ -93,6 +93,7 @@ private:
     int beds_count;
     string resident;
     bool special_services_included;
+    string special_service;
     int price;
     int total_income;
 public:
@@ -102,9 +103,37 @@ public:
         this->type = type;
         this->beds_count = beds_count;
         this->resident = "";
-        this->special_services_included = false;
-        this->price = 0;
         this->total_income = 0;
+        if (type == "Coffin Retreat")
+        {
+            this->price = 50;
+            this->special_services_included = true;
+            this->special_service = "Haunted Call";
+        }
+        else if (type == "Dungeon Royal")
+        {
+            this->price = 80;
+            this->special_services_included = false;
+            this->special_service = "";
+        }
+        else if (type == "Count's Suite")
+        {
+            this->price = 150;
+            this->special_services_included = true;
+            this->special_service = "Vampire Dining";
+        }
+        else if (type == "Haunted Chamber")
+        {
+            this->price = 90;
+            this->special_services_included = true;
+            this->special_service = "Mystic Encounter";
+        }
+        else if (type == "Shadow Penthouse")
+        {
+            this->price = 200;
+            this->special_services_included = false;
+            this->special_service = "";
+        }
     }
     string get_room_ID() {return room_ID;}
     string get_type() {return type;}
@@ -532,6 +561,11 @@ public:
         else
             cout << room.get_resident() << endl;
     }
+
+    static void show_most_popular_room(vector<Room>& rooms)
+    {
+
+    }
 };
 
 int main ()
@@ -552,6 +586,7 @@ int main ()
     regex use_services_pattern ("^use service (\\w+) by guest (\\w+)$");
     regex show_guest_INFO_pattern ("^show guest information (\\w+)$");
     regex show_room_INFO_pattern ("^show room information (\\w+)$");
+    regex show_popular_room ("^show the most popular room type$");
     smatch match;
 
     string command;
@@ -668,6 +703,12 @@ int main ()
         {
             string room_ID = match[1];
             Controller::show_room_INFO(rooms, room_ID);
+            continue;
+        }
+
+        if (regex_match(command, show_popular_room))
+        {
+            Controller::show_most_popular_room(rooms);
             continue;
         }
     }
