@@ -184,7 +184,7 @@ public:
         guest.register_guest(first_name, last_name, ID, phone_number);
         guests.push_back(guest);
         cout << "guest " << ID << " has been registered successfully" << endl;
-     }
+    }
 
     static void add_service(vector<Service>& services, Service& service, string& service_name, vector<Manager>& managers, string& manager_ID)
     {
@@ -419,7 +419,7 @@ public:
 
     static void sort_rooms(vector<Room>& rooms)
     {
-        sort(rooms.begin(), rooms.end(), [](Room& a, Room& b) 
+        sort(rooms.begin(), rooms.end(), [](Room& a, Room& b)
         {
             if (a.has_special_services() != b.has_special_services())
                 return !a.has_special_services();
@@ -428,7 +428,7 @@ public:
                 return a.get_price() < b.get_price();
 
             return a.get_room_ID() < b.get_room_ID();
-        });    
+        });
     }
 
     static void check_out(vector<Room>& rooms, vector<Guest>& guests, string& first_name, string& last_name, string& guest_ID)
@@ -560,7 +560,7 @@ public:
 
     static void show_most_popular_room(vector<Room>& rooms)
     {
-        fo
+
     }
 };
 
