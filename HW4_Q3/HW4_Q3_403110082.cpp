@@ -28,18 +28,41 @@ class Service
 private:
     string service_name;
     bool special;
+    int cost;
+    void set_cost()
+    {
+        if (service_name == "Ghoul's Meal")
+            this->cost = 30;
+        else if (service_name == "Ghost Laundry")
+            this->cost = 20;
+        else if (service_name == "Torture Gym")
+            this->cost = 10;
+        else if (service_name == "Beast Massage")
+            this->cost = 50;
+        else if (service_name == "Room Cleaning")
+            this->cost = 15;
+        else if (service_name == "Moonlight Feast\t")
+            this->cost = 40;
+        else if (service_name == "Haunted Call")
+            this->cost = 15;
+        else if (service_name == "Vampire Dining")
+            this->cost = 50;
+        else if (service_name == "Mystic Encounter")
+            this->cost = 40;
+    }
 public:
     void create_service(string& service_name)
     {
         this->service_name = service_name;
         this->special = false;
+        set_cost();
     }
-
-    string get_service_name() {return service_name;}
+    string get_service_name() const {return service_name;}
     void make_special()
     {
         special = true;
     }
+    int get_cost() const {return cost;}
     bool is_special() const { return special;}
 };
 
@@ -98,7 +121,7 @@ private:
     int total_income;
     int check_in_count;
 public:
-    void add_room(string& room_ID, string& type, int& beds_count)
+    void add_room(string& room_ID, string& type, int& beds_count, int& price, bool& special_services_included, string special_service)
     {
         this->room_ID = room_ID;
         this->type = type;
@@ -106,36 +129,10 @@ public:
         this->resident = "";
         this->total_income = 0;
         this->check_in_count = 0;
-        if (type == "Coffin Retreat")
-        {
-            this->price = 50;
-            this->special_services_included = true;
-            this->special_service = "Haunted Call";
-        }
-        else if (type == "Dungeon Royal")
-        {
-            this->price = 80;
-            this->special_services_included = false;
-            this->special_service = "";
-        }
-        else if (type == "Count's Suite")
-        {
-            this->price = 150;
-            this->special_services_included = true;
-            this->special_service = "Vampire Dining";
-        }
-        else if (type == "Haunted Chamber")
-        {
-            this->price = 90;
-            this->special_services_included = true;
-            this->special_service = "Mystic Encounter";
-        }
-        else if (type == "Shadow Penthouse")
-        {
-            this->price = 200;
-            this->special_services_included = false;
-            this->special_service = "";
-        }
+        this->price = price;
+        this->special_services_included = special_services_included;
+        this->special_service = special_service;
+
     }
     string get_room_ID() {return room_ID;}
     string get_type() {return type;}
@@ -156,6 +153,9 @@ public:
 class Controller
 {
 public:
+    static int number_of_Coffin_Retreat_rooms;
+    static int number_of_Counts_Suite_rooms;
+    static int number_of_Haunted_Chamber_rooms;
     static void register_manager(vector<Manager>& managers, Manager& manager, string& first_name, string& last_name, string& ID)
     {
         for (Manager& m: managers)
@@ -258,7 +258,7 @@ public:
         cout << "service " << service_name << " has been removed successfully" << endl;
     }
 
-    static void add_room(vector<Room>& rooms, Room& room, string& room_ID, string& room_type, int& beds_count, vector<Manager>& managers, string& manager_ID)
+    static void add_room(vector<Room>& rooms, Room& room, string& room_ID, string& room_type, int& beds_count, vector<Manager>& managers, string& manager_ID, vector<Service>& services)
     {
         bool manager_ID_found = false;
         for (Manager m: managers)
@@ -289,12 +289,77 @@ public:
             cout << "room " << room_ID << " has been added already" << endl;
             return;
         }
-        room.add_room(room_ID, room_type, beds_count);
+
+        int price;
+        bool special_services_included;
+        string special_service;
+        if (room_type == "Coffin Retreat")
+        {
+            price = 50;
+            special_services_included = true;
+            special_service = "Haunted Call";
+            if (number_of_Coffin_Retreat_rooms == 0)
+            {
+                Service new_service;
+                new_service.create_service(special_service);
+                new_service.make_special();
+                services.push_back(new_service);
+            }
+            number_of_Coffin_Retreat_rooms++;
+        }
+        else if (room_type == "Dungeon Royal")
+        {
+            price = 80;
+            special_services_included = false;
+            special_service = "";
+        }
+        else if (room_type == "Count's Suite")
+        {
+            price = 150;
+            special_services_included = true;
+            special_service = "Vampire Dining";
+            if (number_of_Counts_Suite_rooms == 0)
+            {
+                Service new_service;
+                new_service.create_service(special_service);
+                new_service.make_special();
+                services.push_back(new_service);
+            }
+            number_of_Counts_Suite_rooms++;
+        }
+        else if (room_type == "Haunted Chamber")
+        {
+            price = 90;
+            special_services_included = true;
+            special_service = "Mystic Encounter";
+            if (number_of_Haunted_Chamber_rooms == 0)
+            {
+                Service new_service;
+                new_service.create_service(special_service);
+                new_service.make_special();
+                services.push_back(new_service);
+            }
+            number_of_Haunted_Chamber_rooms++;
+        }
+        else if (room_type == "Shadow Penthouse")
+        {
+            price = 200;
+            special_services_included = false;
+            special_service = "";
+        }
+        room.add_room(room_ID, room_type, beds_count, price, special_services_included, special_service);
         rooms.push_back(room);
+        if (special_services_included)
+        {
+            Service new_service;
+            new_service.create_service(special_service);
+            new_service.make_special();
+            services.push_back(new_service);
+        }
         cout << "room "<< room_ID <<" with type of " << room_type << " has been added successfully" << endl;
     }
 
-    static void remove_room(vector<Room>& rooms, string& room_ID, vector<Manager>& managers, string& manager_ID)
+    static void remove_room(vector<Room>& rooms, string& room_ID, vector<Manager>& managers, string& manager_ID, vector<Service>& services)
     {
         bool manager_ID_found = false;
         for (Manager m: managers)
@@ -331,6 +396,40 @@ public:
         {
             cout << "room " << rooms[i].get_room_ID() << " is not empty" << endl;
             return;
+        }
+
+        if (rooms[i].get_type() == "Coffin Retreat")
+        {
+            if (number_of_Coffin_Retreat_rooms == 1)
+            {
+                number_of_Coffin_Retreat_rooms--;
+                string service_name = "Haunted Call";
+                services.erase(remove_if(services.begin(), services.end(),[&](Service& s) {return s.get_service_name() == service_name;}),services.end());
+            }
+            else
+                number_of_Coffin_Retreat_rooms--;
+        }
+        else if (rooms[i].get_type() == "Count's Suite")
+        {
+            if (number_of_Counts_Suite_rooms == 1)
+            {
+                number_of_Counts_Suite_rooms--;
+                string service_name = "Vampire Dining";
+                services.erase(remove_if(services.begin(), services.end(),[&](Service& s) {return s.get_service_name() == service_name;}),services.end());
+            }
+            else
+                number_of_Counts_Suite_rooms--;
+        }
+        else if (rooms[i].get_type() == "Haunted Chamber")
+        {
+            if (number_of_Haunted_Chamber_rooms == 1)
+            {
+                number_of_Haunted_Chamber_rooms--;
+                string service_name = "Mystic Encounter";
+                services.erase(remove_if(services.begin(), services.end(),[&](Service& s) {return s.get_service_name() == service_name;}),services.end());
+            }
+            else
+                number_of_Haunted_Chamber_rooms--;
         }
         cout << "room " << rooms[i].get_room_ID() << " with type of " << rooms[i].get_type() << " has been removed successfully" << endl;
         rooms.erase(rooms.begin() + i);
@@ -643,7 +742,7 @@ int main ()
             int beds_count = stoi(match[4]);
             string manger_ID = match[5];
             Room new_room;
-            Controller::add_room(rooms, new_room, room_ID, room_type, beds_count, managers, manger_ID);
+            Controller::add_room(rooms, new_room, room_ID, room_type, beds_count, managers, manger_ID,services);
             Controller::sort_rooms(rooms);
             continue;
         }
@@ -652,7 +751,7 @@ int main ()
         {
             string room_ID = match[1];
             string manager_ID = match[2];
-            Controller::remove_room(rooms, room_ID, managers, manager_ID);
+            Controller::remove_room(rooms, room_ID, managers, manager_ID, services);
             continue;
         }
 
@@ -717,3 +816,7 @@ int main ()
         }
     }
 }
+
+int Controller::number_of_Coffin_Retreat_rooms = 0;
+int Controller::number_of_Counts_Suite_rooms = 0;
+int Controller::number_of_Haunted_Chamber_rooms = 0;
