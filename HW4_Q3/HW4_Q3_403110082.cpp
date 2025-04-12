@@ -332,8 +332,8 @@ public:
             cout << "room " << rooms[i].get_room_ID() << " is not empty" << endl;
             return;
         }
-        rooms.erase(rooms.begin() + i);
         cout << "room " << rooms[i].get_room_ID() << " with type of " << rooms[i].get_type() << " has been removed successfully" << endl;
+        rooms.erase(rooms.begin() + i);
     }
 
     static void check_in_with_reservation(vector<Guest>& guests, string& first_name, string& last_name, string& guest_ID, vector<Room>& rooms, string& room_ID, int& length_of_stay)
@@ -553,9 +553,9 @@ public:
         cout << "number of beds: " << room.get_beds_count() << endl;
         cout << "total income: " << room.get_total_income() << endl;
         if (room.get_resident().empty())
-            cout << "empty" << endl;
+            cout << "guest: " << "empty" << endl;
         else
-            cout << room.get_resident() << endl;
+            cout << "guest: " << room.get_resident() << endl;
     }
 
     static void show_most_popular_room(vector<Room>& rooms)
@@ -572,14 +572,14 @@ int main ()
     vector<Room> rooms;
     regex register_manager_pattern (R"(^register manager (\w+) (\w+) with ID (\w+)$)");
     regex register_guest_pattern (R"(^register guest (\w+) (\w+) with ID (\w+) and phone number (\w+)$)");
-    regex add_service_pattern ("^add service (\\w+) by manager (\\w+)$");
-    regex remove_service_pattern ("^remove service (\\w+) by manager (\\w+)$");
-    regex add_room_pattern (R"(^add room (\w+) (\w+) (\d+) by manager (\w+)$)");
+    regex add_service_pattern (R"(^add service (\S+) (\w+) by manager (\w+)$)");
+    regex remove_service_pattern (R"(^remove service (\S+) (\w+) by manager (\w+)$)");
+    regex add_room_pattern (R"(^add room (\w+) (\S+) (\w+) (\d+) by manager (\w+)$)");
     regex remove_room_pattern ("^remove room (\\w+) by manager (\\w+)$");
     regex check_in_with_reservation_pattern (R"(^check in guest (\w+) (\w+) (\w+) in room (\w+) for (\d+) nights$)");
     regex check_in_without_reservation_pattern (R"(^check in guest (\w+) (\w+) (\w+) for (\d+) nights$)");
     regex check_out_pattern (R"(^check out guest (\w+) (\w+) (\w+)$)");
-    regex use_services_pattern ("^use service (\\w+) by guest (\\w+)$");
+    regex use_services_pattern (R"(^use service (\S+) (\w+) by guest (\w+)$)");
     regex show_guest_INFO_pattern ("^show guest information (\\w+)$");
     regex show_room_INFO_pattern ("^show room information (\\w+)$");
     regex show_popular_room ("^show the most popular room type$");
@@ -616,7 +616,9 @@ int main ()
         if (regex_match(command, match, add_service_pattern))
         {
             string service_name = match[1];
-            string manager_ID = match[2];
+            service_name += " ";
+            service_name += match[2];
+            string manager_ID = match[3];
             Service new_service;
             Controller::add_service(services, new_service, service_name, managers, manager_ID);
             continue;
@@ -625,7 +627,9 @@ int main ()
         if (regex_match(command, match, remove_service_pattern))
         {
             string service_name = match[1];
-            string manager_ID = match[2];
+            service_name += " ";
+            service_name += match[2];
+            string manager_ID = match[3];
             Controller::remove_service(services, service_name, managers, manager_ID);
             continue;
         }
@@ -634,8 +638,10 @@ int main ()
         {
             string room_ID = match[1];
             string room_type = match[2];
-            int beds_count = stoi(match[3]);
-            string manger_ID = match[4];
+            room_type += " ";
+            room_type += match[3];
+            int beds_count = stoi(match[4]);
+            string manger_ID = match[5];
             Room new_room;
             Controller::add_room(rooms, new_room, room_ID, room_type, beds_count, managers, manger_ID);
             Controller::sort_rooms(rooms);
@@ -683,7 +689,9 @@ int main ()
         if (regex_match(command, match, use_services_pattern))
         {
             string service_name = match[1];
-            string guest_ID = match[2];
+            service_name += " ";
+            service_name += match[2];
+            string guest_ID = match[3];
             Controller::use_service(services, service_name, guests, guest_ID);
             continue;
         }
