@@ -30,6 +30,7 @@ private:
     string service_name;
     bool special;
     int cost;
+    int usage_count;
     void set_cost()
     {
         if (service_name == "Ghoul's Meal")
@@ -56,6 +57,7 @@ public:
     {
         this->service_name = service_name;
         this->special = false;
+        usage_count = 0;
         set_cost();
     }
     string get_service_name() const {return service_name;}
@@ -65,6 +67,8 @@ public:
     }
     int get_cost() const {return cost;}
     bool is_special() const { return special;}
+    void use() {usage_count++;}
+    int get_usage_count () const {return usage_count;}
 };
 
 
@@ -601,6 +605,7 @@ public:
             cout << "service " << service_name << " does not exist" << endl;
             return;
         }
+        services[service_index].use();
         guests[guest_index].use_service(services[service_index]);
         cout << "guest " << guests[guest_index].get_ID() << " has used the service " << services[service_index].get_service_name() << " successfully" << endl;
     }
@@ -680,9 +685,46 @@ public:
         }
         sort(most_popular_rooms.begin(), most_popular_rooms.end());
         cout << "type: ";
-        for (const auto& room: most_popular_rooms)
+        for (int i = 0; i < most_popular_rooms.size(); ++i)
         {
-            cout <<  " " << room;
+            cout << most_popular_rooms[i];
+            if (i != most_popular_rooms.size() - 1)
+            {
+                cout << ", ";
+            }
+        }
+        cout << endl;
+    }
+
+    static void show_most_popular_service(vector<Service>& services)
+    {
+        map<string, int> service_type_count;
+        for (Service service: services)
+        {
+            service_type_count[service.get_service_name()] += service.get_usage_count();
+        }
+
+        int max_count = 0;
+        for (auto& entry : service_type_count) {
+            if (entry.second > max_count) {
+                max_count = entry.second;
+            }
+        }
+        vector<string> most_popular_services;
+        for (auto& entry : service_type_count) {
+            if (entry.second == max_count) {
+                most_popular_services.push_back(entry.first);
+            }
+        }
+        sort(most_popular_services.begin(), most_popular_services.end());
+        cout << "service ";
+        for (int i = 0; i < most_popular_services.size(); ++i)
+        {
+            cout << most_popular_services[i];
+            if (i != most_popular_services.size() - 1)
+            {
+                cout << ", ";
+            }
         }
         cout << endl;
     }
@@ -707,6 +749,10 @@ int main ()
     regex show_guest_INFO_pattern ("^show guest information (\\w+)$");
     regex show_room_INFO_pattern ("^show room information (\\w+)$");
     regex show_popular_room ("^show the most popular room type$");
+    regex show_popular_service ("^show the most frequent service$");
+    regex show_total_income ("^show the total income of hotel$");
+    regex show_rooms_income ("^show the total income from rooms$");
+    regex show_services_income ("^show the total income from services$");
     smatch match;
 
     string command;
@@ -837,6 +883,12 @@ int main ()
         if (regex_match(command, show_popular_room))
         {
             Controller::show_most_popular_room(rooms);
+            continue;
+        }
+
+        if (regex_match(command, show_popular_service))
+        {
+            Controller::show_most_popular_service(services);
             continue;
         }
     }
