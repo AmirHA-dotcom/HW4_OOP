@@ -3,6 +3,7 @@
 #include <vector>
 #include <regex>
 #include <map>
+#include <cmath>
 
 using namespace std;
 
@@ -71,6 +72,50 @@ public:
     int get_usage_count () const {return usage_count;}
 };
 
+class Room
+{
+private:
+    string room_ID;
+    string type;
+    int beds_count;
+    string resident;
+    bool special_services_included;
+    string special_service;
+    int price;
+    int total_income;
+    int check_in_count;
+    int current_length_of_stay;
+public:
+    void add_room(string& room_ID, string& type, int& beds_count, int& price, bool& special_services_included, string special_service)
+    {
+        this->room_ID = room_ID;
+        this->type = type;
+        this->beds_count = beds_count;
+        this->resident = "";
+        this->total_income = 0;
+        this->check_in_count = 0;
+        this->price = price;
+        this->special_services_included = special_services_included;
+        this->special_service = special_service;
+        this->current_length_of_stay = 0;
+    }
+    string get_room_ID() {return room_ID;}
+    string get_type() {return type;}
+    int get_beds_count() const {return beds_count;}
+    void assign_guest(string resident, int length_of_stay)
+    {
+        this->resident = resident;
+        check_in_count++;
+        current_length_of_stay = length_of_stay;
+    }
+    void empty_room() {resident.clear(); current_length_of_stay = 0;}
+    int get_length_of_stay () const {return current_length_of_stay;}
+    string get_resident() {return resident;}
+    int get_price() const {return price;}
+    bool has_special_services() const {return special_services_included;}
+    int get_total_income() const {return total_income;}
+    int get_check_in_count() const {return check_in_count;}
+};
 
 class Guest
 {
@@ -80,8 +125,8 @@ private:
     string ID;
     string phone_number;
     int length_of_stay;
-    string room_ID;
     vector<Service> services_used;
+    Room room;
 public:
     void register_guest(string& first_name, string& last_name, string& ID, string& phone_number)
     {
@@ -100,12 +145,11 @@ public:
     string get_ID() {return ID;}
     string get_phone_number() {return phone_number;}
     int get_length_of_stay() const {return length_of_stay;}
-    void assign_room  (string room_ID)
+    void assign_room  (Room room)
     {
-        this->room_ID = room_ID;
+        this->room = room;
     }
-    string get_room_ID() {return room_ID;}
-    void check_out() {room_ID.clear();}
+    string get_room_ID() {return room.get_room_ID();}
     void use_service(Service service)
     {
         services_used.push_back(service);
@@ -113,46 +157,33 @@ public:
     vector<Service> get_used_services() {return services_used;}
 };
 
-class Room
+class Calculations
 {
-private:
-    string room_ID;
-    string type;
-    int beds_count;
-    string resident;
-    bool special_services_included;
-    string special_service;
-    int price;
-    int total_income;
-    int check_in_count;
 public:
-    void add_room(string& room_ID, string& type, int& beds_count, int& price, bool& special_services_included, string special_service)
+    int total_room_cost(Room& room)
     {
-        this->room_ID = room_ID;
-        this->type = type;
-        this->beds_count = beds_count;
-        this->resident = "";
-        this->total_income = 0;
-        this->check_in_count = 0;
-        this->price = price;
-        this->special_services_included = special_services_included;
-        this->special_service = special_service;
+        float discount = 0;
+        int total_exclusive_service_cost = 0;
+        if (room.get_length_of_stay() < 4)
+        {
+            discount = 0;
+        }
+        else if (room.get_length_of_stay() >= 4 && room.get_length_of_stay() <= 6)
+        {
+            discount = 0.05;
+        }
+        else if (room.get_length_of_stay() >= 7 && room.get_length_of_stay() <= 9)
+        {
+            discount = 0.1;
+        }
+        else if (room.get_length_of_stay() >= 10)
+        {
+            discount = 0.15;
+        }
 
+        int total_cost = floor(room.get_price() * room.get_length_of_stay() * room.get_beds_count() * (1 - discount) + total_exclusive_service_cost);
+        return total_cost;
     }
-    string get_room_ID() {return room_ID;}
-    string get_type() {return type;}
-    int get_beds_count() const {return beds_count;}
-    void assign_guest(string resident)
-    {
-        this->resident = resident;
-        check_in_count++;
-    }
-    void empty_room() {resident.clear();}
-    string get_resident() {return resident;}
-    int get_price() const {return price;}
-    bool has_special_services() const {return special_services_included;}
-    int get_total_income() const {return total_income;}
-    int get_check_in_count() const {return check_in_count;}
 };
 
 class Controller
@@ -477,9 +508,9 @@ public:
             cout << "room " << rooms[room_index].get_room_ID() << " is not empty" << endl;
             return;
         }
-        rooms[room_index].assign_guest(guests[guest_index].get_ID());
+        rooms[room_index].assign_guest(guests[guest_index].get_ID(), length_of_stay);
         guests[guest_index].set_length_of_stay(length_of_stay);
-        guests[guest_index].assign_room(room_ID);
+        guests[guest_index].assign_room(rooms[room_index]);
         cout << "guest " << guests[guest_index].get_first_name() << " " << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked in successfully" << endl;
     }
 
@@ -515,9 +546,9 @@ public:
             cout << "there are no empty rooms" << endl;
             return;
         }
-        rooms[room_index].assign_guest(guests[guest_index].get_ID());
+        rooms[room_index].assign_guest(guests[guest_index].get_ID(), length_of_stay);
         guests[guest_index].set_length_of_stay(length_of_stay);
-        guests[guest_index].assign_room(rooms[room_index].get_room_ID());
+        guests[guest_index].assign_room(rooms[room_index]);
         cout << "guest " << guests[guest_index].get_first_name() << " " << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked into room " << rooms[room_index].get_room_ID() << endl;
     }
 
@@ -564,7 +595,6 @@ public:
                 break;
         }
         rooms[room_index].empty_room();
-        guests[guest_index].check_out();
         cout << "guest with ID " << guests[guest_index].get_ID() << " has checked out with a cost of " << rooms[room_index].get_price() << endl;
     }
 
