@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <regex>
+#include <map>
 
 using namespace std;
 
@@ -659,7 +660,31 @@ public:
 
     static void show_most_popular_room(vector<Room>& rooms)
     {
+        map<string, int> room_type_count;
+        for (Room room: rooms)
+        {
+            room_type_count[room.get_type()] += room.get_check_in_count();
+        }
 
+        int max_count = 0;
+        for (auto& entry : room_type_count) {
+            if (entry.second > max_count) {
+                max_count = entry.second;
+            }
+        }
+        vector<string> most_popular_rooms;
+        for (auto& entry : room_type_count) {
+            if (entry.second == max_count) {
+                most_popular_rooms.push_back(entry.first);
+            }
+        }
+        sort(most_popular_rooms.begin(), most_popular_rooms.end());
+        cout << "type: ";
+        for (const auto& room: most_popular_rooms)
+        {
+            cout <<  " " << room;
+        }
+        cout << endl;
     }
 };
 
