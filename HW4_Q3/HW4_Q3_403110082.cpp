@@ -308,7 +308,7 @@ public:
         }
         if (!service_found)
         {
-            cout << "service " << service_name << " is not registered" << endl;
+            cout << "service " << service_name << " does not exist" << endl;
             return;
         }
         services.erase(services.begin() + i);
@@ -788,18 +788,18 @@ int main ()
     vector<Guest> guests;
     vector<Service> services;
     vector<Room> rooms;
-    regex register_manager_pattern (R"(^register manager (\w+) (\w+) with ID (\w+)$)");
-    regex register_guest_pattern (R"(^register guest (\w+) (\w+) with ID (\w+) and phone number (\w+)$)");
-    regex add_service_pattern (R"(^add service (\S+) (\w+) by manager (\w+)$)");
-    regex remove_service_pattern (R"(^remove service (\S+) (\w+) by manager (\w+)$)");
-    regex add_room_pattern (R"(^add room (\w+) (\S+) (\w+) (\d+) by manager (\w+)$)");
-    regex remove_room_pattern ("^remove room (\\w+) by manager (\\w+)$");
-    regex check_in_with_reservation_pattern (R"(^check in guest (\w+) (\w+) (\w+) in room (\w+) for (\d+) nights$)");
-    regex check_in_without_reservation_pattern (R"(^check in guest (\w+) (\w+) (\w+) for (\d+) nights$)");
-    regex check_out_pattern (R"(^check out guest (\w+) (\w+) (\w+)$)");
-    regex use_services_pattern (R"(^use service (\S+) (\w+) by guest (\w+)$)");
-    regex show_guest_INFO_pattern ("^show guest information (\\w+)$");
-    regex show_room_INFO_pattern ("^show room information (\\w+)$");
+    regex register_manager_pattern (R"(^register manager (\S+) (\S+) with ID (\S+)$)");
+    regex register_guest_pattern (R"(^register guest (\S+) (\S+) with ID (\S+) and phone number (\S+)$)");
+    regex add_service_pattern (R"(^add service (\S+)(?: (\S+))? by manager (\S+)$)");
+    regex remove_service_pattern (R"(^remove service (\S+)(?: (\S+))? by manager (\S+)$)");
+    regex add_room_pattern (R"(^add room (\S+) (\S+)(?: (\S+))? (\S+) by manager (\S+)$)");
+    regex remove_room_pattern ("^remove room (\\S+) by manager (\\S+)$");
+    regex check_in_with_reservation_pattern (R"(^check in guest (\S+) (\S+) (\S+) in room (\S+) for (\S+) nights$)");
+    regex check_in_without_reservation_pattern (R"(^check in guest (\S+) (\S+) (\S+) for (\S+) nights$)");
+    regex check_out_pattern (R"(^check out guest (\S+) (\S+) (\S+)$)");
+    regex use_services_pattern (R"(^use service (\S+)(?: (\S+))? by guest (\S+)$)");
+    regex show_guest_INFO_pattern ("^show guest information (\\S+)$");
+    regex show_room_INFO_pattern ("^show room information (\\S)$");
     regex show_popular_room ("^show the most popular room type$");
     regex show_popular_service ("^show the most frequent service$");
     regex show_total_income ("^show the total income of hotel$");
