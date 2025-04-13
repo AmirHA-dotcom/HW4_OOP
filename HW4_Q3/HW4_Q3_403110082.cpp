@@ -75,6 +75,7 @@ public:
 class Room
 {
 private:
+    bool Active;
     string room_ID;
     string type;
     int beds_count;
@@ -88,6 +89,7 @@ private:
 public:
     void add_room(string& room_ID, string& type, int& beds_count, int& price, bool& special_services_included, string special_service)
     {
+        Active = true;
         this->room_ID = room_ID;
         this->type = type;
         this->beds_count = beds_count;
@@ -99,6 +101,8 @@ public:
         this->special_service = special_service;
         this->current_length_of_stay = 0;
     }
+    bool is_active () {return Active;}
+    void remove_room () {Active = false;}
     string get_room_ID() {return room_ID;}
     string get_type() {return type;}
     int get_beds_count() const {return beds_count;}
@@ -485,7 +489,7 @@ public:
                 number_of_Haunted_Chamber_rooms--;
         }
         cout << "room " << rooms[i].get_room_ID() << " with type of " << rooms[i].get_type() << " has been removed successfully" << endl;
-        rooms.erase(rooms.begin() + i);
+        rooms[i].remove_room();
     }
 
     static void check_in_with_reservation(vector<Guest>& guests, string& first_name, string& last_name, string& guest_ID, vector<Room>& rooms, string& room_ID, int& length_of_stay)
@@ -509,7 +513,7 @@ public:
         int room_index = 0;
         for (room_index = 0; room_index < rooms.size(); room_index++)
         {
-            if (rooms[room_index].get_room_ID() == room_ID)
+            if (rooms[room_index].get_room_ID() == room_ID && rooms[room_index].is_active())
             {
                 room_found = true;
                 break;
@@ -552,7 +556,7 @@ public:
         bool no_room_available = true;
         for (room_index = 0; room_index < rooms.size(); room_index++)
         {
-            if (rooms[room_index].get_resident().empty())
+            if (rooms[room_index].get_resident().empty() && rooms[room_index].is_active())
             {
                 no_room_available = false;
                 break;
