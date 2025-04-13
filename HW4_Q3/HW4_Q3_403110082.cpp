@@ -587,7 +587,7 @@ public:
                 return !a.has_special_services();
 
             if (a.get_price() != b.get_price())
-                return a.get_price() < b.get_price();
+                return a.get_price() > b.get_price();
 
             return a.get_room_ID() < b.get_room_ID();
         });
