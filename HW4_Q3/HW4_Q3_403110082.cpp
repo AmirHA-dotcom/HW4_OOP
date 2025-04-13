@@ -115,6 +115,7 @@ public:
     bool has_special_services() const {return special_services_included;}
     int get_total_income() const {return total_income;}
     int get_check_in_count() const {return check_in_count;}
+    string get_special_service () const {return special_service;}
 };
 
 class Guest
@@ -127,6 +128,7 @@ private:
     int length_of_stay;
     vector<Service> services_used;
     Room room;
+    int times_used_special_services;
 public:
     void register_guest(string& first_name, string& last_name, string& ID, string& phone_number)
     {
@@ -135,6 +137,7 @@ public:
         this->ID = ID;
         this->phone_number = phone_number;
         this->length_of_stay = 0;
+        times_used_special_services = 0;
     }
     void set_length_of_stay(int& length_of_stay)
     {
@@ -153,35 +156,49 @@ public:
     void use_service(Service service)
     {
         services_used.push_back(service);
+        if (service.get_service_name() == room.get_special_service())
+            times_used_special_services++;
+
     }
     vector<Service> get_used_services() {return services_used;}
+    int get_times_used_special_services () const {return times_used_special_services;}
 };
 
 class Calculations
 {
 public:
-    int total_room_cost(Room& room)
+    static int total_room_cost(Room& room, Guest& guest)
     {
         float discount = 0;
         int total_exclusive_service_cost = 0;
-        if (room.get_length_of_stay() < 4)
+        if (guest.get_length_of_stay() < 4)
         {
             discount = 0;
         }
-        else if (room.get_length_of_stay() >= 4 && room.get_length_of_stay() <= 6)
+        else if (guest.get_length_of_stay() >= 4 && guest.get_length_of_stay() <= 6)
         {
             discount = 0.05;
         }
-        else if (room.get_length_of_stay() >= 7 && room.get_length_of_stay() <= 9)
+        else if (guest.get_length_of_stay() >= 7 && guest.get_length_of_stay() <= 9)
         {
             discount = 0.1;
         }
-        else if (room.get_length_of_stay() >= 10)
+        else if (guest.get_length_of_stay() >= 10)
         {
             discount = 0.15;
         }
 
-        int total_cost = floor(room.get_price() * room.get_length_of_stay() * room.get_beds_count() * (1 - discount) + total_exclusive_service_cost);
+        int cost_of_service = 0;
+        if (room.get_special_service() == "Haunted Call")
+            cost_of_service = 15;
+        else if (room.get_special_service() == "Vampire Dining")
+            cost_of_service = 50;
+        else if (room.get_special_service() == "Mystic Encounter")
+            cost_of_service = 40;
+
+        total_exclusive_service_cost = cost_of_service * guest.get_times_used_special_services();
+
+        int total_cost = floor(room.get_price() * guest.get_length_of_stay() * room.get_beds_count() * (1 - discount) + total_exclusive_service_cost);
         return total_cost;
     }
 };
@@ -595,7 +612,8 @@ public:
                 break;
         }
         rooms[room_index].empty_room();
-        cout << "guest with ID " << guests[guest_index].get_ID() << " has checked out with a cost of " << rooms[room_index].get_price() << endl;
+        int total_room_cost = Calculations::total_room_cost(rooms[room_index], guests[guest_index]);
+        cout << "guest with ID " << guests[guest_index].get_ID() << " has checked out with a cost of " << total_room_cost << endl;
     }
 
     static void use_service(vector<Service>& services, string& service_name, vector<Guest>& guests, string& guest_ID)
