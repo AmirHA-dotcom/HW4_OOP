@@ -83,7 +83,7 @@ private:
     bool special_services_included;
     string special_service;
     int price;
-    int total_income;
+    float total_income;
     int check_in_count;
     int current_length_of_stay;
 public:
@@ -252,8 +252,8 @@ public:
                 total_services_cost += 15;
             else if (s.get_service_name() == "Moonlight Feast")
                 total_services_cost += 40;
-            return total_services_cost;
         }
+        return total_services_cost;
     }
 };
 
@@ -622,6 +622,7 @@ public:
         rooms[room_index].assign_guest(guests[guest_index].get_ID(), length_of_stay);
         guests[guest_index].set_length_of_stay(length_of_stay);
         guests[guest_index].assign_room(rooms[room_index]);
+        rooms[room_index].make_income(rooms[room_index].get_price() * rooms[room_index].get_beds_count());
         cout << "guest " << guests[guest_index].get_first_name() << " " << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked into room " << rooms[room_index].get_room_ID() << endl;
     }
 
@@ -669,16 +670,16 @@ public:
         }
         rooms[room_index].empty_room();
         float total_room_cost = Calculations::room_cost(rooms[room_index], guests[guest_index]) + Calculations::service_cost(rooms[room_index], guests[guest_index]);
-        if (total_room_cost >= 1000)
+        if (total_room_cost > 1000)
         {
-            total_room_cost *= 1.1;
+           total_room_cost *= 1.1;
         }
         cout << "guest with ID " << guests[guest_index].get_ID() << " has checked out with a cost of " << total_room_cost << endl;
         guests[guest_index].check_out();
         rooms[room_index].make_income(total_room_cost);
     }
 
-    static void use_service(vector<Service>& services, string& service_name, vector<Guest>& guests, string& guest_ID)
+    static void use_service(vector<Service>& services, string& service_name, vector<Guest>& guests, string& guest_ID, vector<Room>& rooms, int& services_total_income)
     {
         bool guest_found = false;
         int guest_index = 0;
@@ -700,6 +701,16 @@ public:
             cout << "guest with ID " << guest_ID << " has not been registered or checked in yet" << endl;
             return;
         }
+
+        int room_index = 0;
+        for (room_index = 0; room_index < rooms.size(); room_index++)
+        {
+            if (rooms[room_index].get_room_ID() == guests[guest_index].get_room_ID())
+            {
+                break;
+            }
+        }
+
         bool service_found = false;
         int service_index = 0;
         for (service_index = 0; service_index < services.size(); service_index++)
@@ -715,6 +726,42 @@ public:
             cout << "service " << service_name << " does not exist" << endl;
             return;
         }
+
+        if (services[service_index].is_special())
+        {
+            if (services[service_index].get_service_name() == "Haunted Call")
+            {
+                if (rooms[room_index].get_special_service() == "Haunted Call")
+                    rooms[room_index].make_income(15);
+                else
+                    rooms[room_index].make_income(15 * 1.5);
+
+                services_total_income += 15;
+            }
+            else if (services[service_index].get_service_name() == "Vampire Dining")
+            {
+                if (rooms[room_index].get_special_service() == "Vampire Dining")
+                    rooms[room_index].make_income(50);
+                else
+                    rooms[room_index].make_income(50 * 1.5);
+
+                services_total_income += 50;
+            }
+            else if (services[service_index].get_service_name() == "Mystic Encounter")
+            {
+                if (rooms[room_index].get_special_service() == "Mystic Encounter")
+                    rooms[room_index].make_income(40);
+                else
+                    rooms[room_index].make_income(40 * 1.5);
+
+                services_total_income += 40;
+            }
+        }
+        else
+        {
+            services_total_income += services[service_index].get_cost();
+        }
+
         services[service_index].use();
         guests[guest_index].use_service(services[service_index]);
         cout << "guest " << guests[guest_index].get_ID() << " has used the service " << services[service_index].get_service_name() << " successfully" << endl;
@@ -838,6 +885,21 @@ public:
         }
         cout << endl;
     }
+
+    static void show_room_income(vector<Room>& rooms)
+    {
+        int rooms_total_income = 0;
+        for (Room r: rooms)
+        {
+            rooms_total_income += r.get_total_income();
+        }
+        cout << "the total income from rooms is " << rooms_total_income << endl;
+    }
+
+    static void show_services_income(int& services_income)
+    {
+        cout << "the total income from services is " << services_income << endl;
+    }
 };
 
 int main ()
@@ -846,6 +908,7 @@ int main ()
     vector<Guest> guests;
     vector<Service> services;
     vector<Room> rooms;
+    int services_total_income = 0;
     regex register_manager_pattern (R"(^register manager (\S+) (\S+) with ID (\S+)$)");
     regex register_guest_pattern (R"(^register guest (\S+) (\S+) with ID (\S+) and phone number (\S+)$)");
     regex add_service_pattern (R"(^add service (\S+)(?: (\S+))? by manager (\S+)$)");
@@ -972,7 +1035,7 @@ int main ()
             service_name += " ";
             service_name += match[2];
             string guest_ID = match[3];
-            Controller::use_service(services, service_name, guests, guest_ID);
+            Controller::use_service(services, service_name, guests, guest_ID, rooms, services_total_income);
             continue;
         }
 
@@ -999,6 +1062,18 @@ int main ()
         if (regex_match(command, show_popular_service))
         {
             Controller::show_most_popular_service(services);
+            continue;
+        }
+
+        if (regex_match(command, show_rooms_income))
+        {
+            Controller::show_room_income(rooms);
+            continue;
+        }
+
+        if (regex_match(command, show_services_income))
+        {
+            Controller::show_services_income(services_total_income);
             continue;
         }
     }
