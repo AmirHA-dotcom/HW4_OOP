@@ -120,6 +120,10 @@ public:
     int get_total_income() const {return total_income;}
     int get_check_in_count() const {return check_in_count;}
     string get_special_service () const {return special_service;}
+    void make_income (int income)
+    {
+        total_income += income;
+    }
 };
 
 class Guest
@@ -132,8 +136,8 @@ private:
     int length_of_stay;
     vector<Service> services_used;
     Room room;
-    int times_used_special_services;
     bool is_checked_in;
+    int total_cost;
 public:
     void register_guest(string& first_name, string& last_name, string& ID, string& phone_number)
     {
@@ -142,8 +146,8 @@ public:
         this->ID = ID;
         this->phone_number = phone_number;
         this->length_of_stay = 0;
-        times_used_special_services = 0;
         is_checked_in = false;
+        total_cost = 0;
     }
     void set_length_of_stay(int& length_of_stay)
     {
@@ -165,21 +169,17 @@ public:
     void use_service(Service service)
     {
         services_used.push_back(service);
-        if (service.get_service_name() == room.get_special_service())
-            times_used_special_services++;
-
     }
     vector<Service> get_used_services() {return services_used;}
-    int get_times_used_special_services () const {return times_used_special_services;}
 };
 
 class Calculations
 {
 public:
-    static int total_room_cost(Room& room, Guest& guest)
+    static float room_cost(Room& room, Guest& guest)
     {
         float discount = 0;
-        int total_exclusive_service_cost = 0;
+        float total_exclusive_service_cost = 0;
         if (guest.get_length_of_stay() < 4)
         {
             discount = 0;
@@ -197,18 +197,63 @@ public:
             discount = 0.15;
         }
 
-        int cost_of_service = 0;
-        if (room.get_special_service() == "Haunted Call")
-            cost_of_service = 15;
-        else if (room.get_special_service() == "Vampire Dining")
-            cost_of_service = 50;
-        else if (room.get_special_service() == "Mystic Encounter")
-            cost_of_service = 40;
+        int times_used_Haunted_Call = 0;
+        int times_used_Vampire_Dining = 0;
+        int times_used_Mystic_Encounter = 0;
+        for (Service s: guest.get_used_services())
+        {
+            if (s.get_service_name() == "Haunted Call")
+                times_used_Haunted_Call++;
+            else if (s.get_service_name() == "Vampire Dining")
+               times_used_Vampire_Dining++;
+            else if (s.get_service_name() == "Mystic Encounter")
+               times_used_Mystic_Encounter++;
+        }
 
-        total_exclusive_service_cost = cost_of_service * guest.get_times_used_special_services();
+        if (room.has_special_services())
+        {
+            if (room.get_special_service() == "Haunted Call")
+            {
+                total_exclusive_service_cost = times_used_Haunted_Call * 15 + 1.5 * (times_used_Vampire_Dining * 50 + times_used_Mystic_Encounter * 40);
+            }
+            else if (room.get_special_service() == "Vampire Dining")
+            {
+                total_exclusive_service_cost = times_used_Vampire_Dining * 50 + 1.5 * (times_used_Haunted_Call * 15 + times_used_Mystic_Encounter * 40);
+            }
+            else if (room.get_special_service() == "Mystic Encounter")
+            {
+                total_exclusive_service_cost = times_used_Mystic_Encounter * 40 + 1.5 * (times_used_Vampire_Dining * 50 + times_used_Haunted_Call * 15);
+            }
+        }
+        else
+        {
+            total_exclusive_service_cost =  1.5 * (times_used_Mystic_Encounter * 40 + times_used_Vampire_Dining * 50 + times_used_Haunted_Call * 15);
+        }
+
 
         int total_cost = floor(room.get_price() * guest.get_length_of_stay() * room.get_beds_count() * (1 - discount) + total_exclusive_service_cost);
         return total_cost;
+    }
+
+    static float service_cost(Room& room, Guest& guest)
+    {
+        int total_services_cost = 0;
+        for (Service s: guest.get_used_services())
+        {
+            if (s.get_service_name() == "Ghoul's Meal")
+                total_services_cost += 30;
+            else if (s.get_service_name() == "Ghost Laundry")
+                total_services_cost += 20;
+            else if (s.get_service_name() == "Torture Gym")
+                total_services_cost += 10;
+            else if (s.get_service_name() == "Beast Massage")
+                total_services_cost += 50;
+            else if (s.get_service_name() == "Room Cleaning")
+                total_services_cost += 15;
+            else if (s.get_service_name() == "Moonlight Feast")
+                total_services_cost += 40;
+            return total_services_cost;
+        }
     }
 };
 
@@ -537,6 +582,7 @@ public:
         rooms[room_index].assign_guest(guests[guest_index].get_ID(), length_of_stay);
         guests[guest_index].set_length_of_stay(length_of_stay);
         guests[guest_index].assign_room(rooms[room_index]);
+        rooms[room_index].make_income(rooms[room_index].get_price() * rooms[room_index].get_beds_count());
         cout << "guest " << guests[guest_index].get_first_name() << " " << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked in successfully" << endl;
     }
 
@@ -587,7 +633,7 @@ public:
                 return !a.has_special_services();
 
             if (a.get_price() != b.get_price())
-                return a.get_price() > b.get_price();
+                return a.get_price() * a.get_beds_count() < b.get_price() * b.get_beds_count();
 
             return a.get_room_ID() < b.get_room_ID();
         });
@@ -622,9 +668,14 @@ public:
                 break;
         }
         rooms[room_index].empty_room();
-        int total_room_cost = Calculations::total_room_cost(rooms[room_index], guests[guest_index]);
+        float total_room_cost = Calculations::room_cost(rooms[room_index], guests[guest_index]) + Calculations::service_cost(rooms[room_index], guests[guest_index]);
+        if (total_room_cost >= 1000)
+        {
+            total_room_cost *= 1.1;
+        }
         cout << "guest with ID " << guests[guest_index].get_ID() << " has checked out with a cost of " << total_room_cost << endl;
         guests[guest_index].check_out();
+        rooms[room_index].make_income(total_room_cost);
     }
 
     static void use_service(vector<Service>& services, string& service_name, vector<Guest>& guests, string& guest_ID)
