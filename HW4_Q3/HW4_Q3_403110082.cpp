@@ -74,6 +74,10 @@ public:
     bool is_special() const { return special;}
     void use() {usage_count++;}
     int get_usage_count () const {return usage_count;}
+    int get_income ()
+    {
+        return (usage_count * cost);
+    }
 };
 
 class Room
@@ -937,6 +941,65 @@ public:
             tax = 1.1;
         cout << "the total income of hotel is " << floor(total_income_of_hotel * tax) << endl;
     }
+
+    static void sort_things(string room_or_service, string type_of_sort, vector<Room> rooms, vector<Service> services)
+    {
+        if (room_or_service == "rooms")
+        {
+            if (type_of_sort == "use")
+            {
+                sort(rooms.begin(), rooms.end(), [](Room& a, Room& b) {
+                    if (a.get_check_in_count() != b.get_check_in_count())
+                        return a.get_check_in_count() < b.get_check_in_count();
+                    return a.get_room_ID() < b.get_room_ID();});
+                for (Room r: rooms)
+                {
+                    cout << r.get_room_ID() << ": " << r.get_check_in_count() << endl;
+                }
+            }
+
+            else if (type_of_sort == "income")
+            {
+                sort(rooms.begin(), rooms.end(), [](Room& a, Room& b) {
+                    if (a.get_total_income() != b.get_total_income())
+                        return a.get_total_income() > b.get_total_income();
+                    return a.get_room_ID() < b.get_room_ID();});
+                for (Room r: rooms)
+                {
+                    cout << r.get_room_ID() << ": " << r.get_total_income() << endl;
+                }
+            }
+        }
+
+        else
+        {
+            if (type_of_sort == "use")
+            {
+                sort(services.begin(), services.end(), [](const Service& a, const Service& b) {
+                    if (a.get_usage_count() != b.get_usage_count())
+                        return a.get_usage_count() < b.get_usage_count();
+                    return a.get_service_name() < b.get_service_name();
+                });
+                for (Service s: services)
+                {
+                    cout << s.get_service_name() << ": " << s.get_usage_count() << endl;
+                }
+            }
+
+            else if (type_of_sort == "income")
+            {
+                sort(services.begin(), services.end(), [](Service& a, Service& b) {
+                    if (a.get_usage_count() != b.get_usage_count())
+                        return a.get_income() < b.get_income();
+                    return a.get_service_name() < b.get_service_name();
+                });
+                for (Service s: services)
+                {
+                    cout << s.get_service_name() << ": " << s.get_income() << endl;
+                }
+            }
+        }
+    }
 };
 
 int main ()
@@ -962,6 +1025,7 @@ int main ()
     regex show_total_income ("^show the total income of hotel$");
     regex show_rooms_income ("^show the total income from rooms$");
     regex show_services_income ("^show the total income from services$");
+    regex sort_pattern ("^sort the (rooms|services) based on (use|income|use and income)$");
     smatch match;
 
     string command;
@@ -1116,6 +1180,14 @@ int main ()
         if (regex_match(command, show_services_income))
         {
             Controller::show_services_income(services_total_income);
+            continue;
+        }
+
+        if (regex_match(command, match, sort_pattern))
+        {
+            string room_or_service = match[1];
+            string type_of_sort = match[2];
+            Controller::sort_things(room_or_service, type_of_sort, rooms, services);
             continue;
         }
     }
