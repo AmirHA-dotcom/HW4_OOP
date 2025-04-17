@@ -7,6 +7,10 @@
 
 using namespace std;
 
+float total_income_of_hotel = 0;
+int services_total_income = 0;
+
+
 class Manager
 {
 private:
@@ -171,6 +175,10 @@ public:
         services_used.push_back(service);
     }
     vector<Service> get_used_services() {return services_used;}
+    void add_total_cost(float cost)
+    {
+        total_cost += cost;
+    }
 };
 
 class Calculations
@@ -582,7 +590,8 @@ public:
         rooms[room_index].assign_guest(guests[guest_index].get_ID(), length_of_stay);
         guests[guest_index].set_length_of_stay(length_of_stay);
         guests[guest_index].assign_room(rooms[room_index]);
-        rooms[room_index].make_income(rooms[room_index].get_price() * rooms[room_index].get_beds_count());
+        rooms[room_index].make_income(Calculations::room_cost(rooms[room_index], guests[guest_index]));
+        total_income_of_hotel += Calculations::room_cost(rooms[room_index], guests[guest_index]);
         cout << "guest " << guests[guest_index].get_first_name() << " " << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked in successfully" << endl;
     }
 
@@ -622,7 +631,8 @@ public:
         rooms[room_index].assign_guest(guests[guest_index].get_ID(), length_of_stay);
         guests[guest_index].set_length_of_stay(length_of_stay);
         guests[guest_index].assign_room(rooms[room_index]);
-        rooms[room_index].make_income(rooms[room_index].get_price() * rooms[room_index].get_beds_count());
+        rooms[room_index].make_income(Calculations::room_cost(rooms[room_index], guests[guest_index]));
+        total_income_of_hotel += Calculations::room_cost(rooms[room_index], guests[guest_index]);
         cout << "guest " << guests[guest_index].get_first_name() << " " << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked into room " << rooms[room_index].get_room_ID() << endl;
     }
 
@@ -676,7 +686,7 @@ public:
         }
         cout << "guest with ID " << guests[guest_index].get_ID() << " has checked out with a cost of " << total_room_cost << endl;
         guests[guest_index].check_out();
-        rooms[room_index].make_income(total_room_cost);
+        //rooms[room_index].make_income(total_room_cost);
     }
 
     static void use_service(vector<Service>& services, string& service_name, vector<Guest>& guests, string& guest_ID, vector<Room>& rooms, int& services_total_income)
@@ -732,34 +742,47 @@ public:
             if (services[service_index].get_service_name() == "Haunted Call")
             {
                 if (rooms[room_index].get_special_service() == "Haunted Call")
+                {
                     rooms[room_index].make_income(15);
+                    total_income_of_hotel += 15;
+                }
                 else
-                    rooms[room_index].make_income(15 * 1.5);
-
-                services_total_income += 15;
+                {
+                    rooms[room_index].make_income(15);
+                    total_income_of_hotel += 15 * 1.5;
+                }
             }
             else if (services[service_index].get_service_name() == "Vampire Dining")
             {
                 if (rooms[room_index].get_special_service() == "Vampire Dining")
+                {
                     rooms[room_index].make_income(50);
+                    total_income_of_hotel += 50;
+                }
                 else
-                    rooms[room_index].make_income(50 * 1.5);
-
-                services_total_income += 50;
+                {
+                    rooms[room_index].make_income(50);
+                    total_income_of_hotel += 50 * 1.5;
+                }
             }
             else if (services[service_index].get_service_name() == "Mystic Encounter")
             {
                 if (rooms[room_index].get_special_service() == "Mystic Encounter")
+                {
                     rooms[room_index].make_income(40);
+                    total_income_of_hotel += 40;
+                }
                 else
-                    rooms[room_index].make_income(40 * 1.5);
-
-                services_total_income += 40;
+                {
+                    rooms[room_index].make_income(40);
+                    total_income_of_hotel += 40 * 1.5;
+                }
             }
         }
         else
         {
             services_total_income += services[service_index].get_cost();
+            total_income_of_hotel += services[service_index].get_cost();
         }
 
         services[service_index].use();
@@ -893,12 +916,26 @@ public:
         {
             rooms_total_income += r.get_total_income();
         }
-        cout << "the total income from rooms is " << rooms_total_income << endl;
+        float tax = 1;
+        if (rooms_total_income > 1000)
+            tax = 1.1;
+        cout << "the total income from rooms is " << floor(rooms_total_income * tax) << endl;
     }
 
     static void show_services_income(int& services_income)
     {
-        cout << "the total income from services is " << services_income << endl;
+        float tax = 1;
+        if (services_total_income > 1000)
+            tax = 1.1;
+        cout << "the total income from services is " << floor(services_income * tax) << endl;
+    }
+
+    static void show_total_income()
+    {
+        float tax = 1;
+        if (total_income_of_hotel > 1000)
+            tax = 1.1;
+        cout << "the total income of hotel is " << floor(total_income_of_hotel * tax) << endl;
     }
 };
 
@@ -908,7 +945,6 @@ int main ()
     vector<Guest> guests;
     vector<Service> services;
     vector<Room> rooms;
-    int services_total_income = 0;
     regex register_manager_pattern (R"(^register manager (\S+) (\S+) with ID (\S+)$)");
     regex register_guest_pattern (R"(^register guest (\S+) (\S+) with ID (\S+) and phone number (\S+)$)");
     regex add_service_pattern (R"(^add service (\S+)(?: (\S+))? by manager (\S+)$)");
@@ -1062,6 +1098,12 @@ int main ()
         if (regex_match(command, show_popular_service))
         {
             Controller::show_most_popular_service(services);
+            continue;
+        }
+
+        if (regex_match(command, show_total_income))
+        {
+            Controller::show_total_income();
             continue;
         }
 
