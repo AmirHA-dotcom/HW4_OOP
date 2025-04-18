@@ -35,6 +35,7 @@ private:
     bool special;
     int cost;
     int usage_count;
+    bool is_active;
     void set_cost()
     {
         if (service_name == "Ghoul's Meal")
@@ -47,7 +48,7 @@ private:
             this->cost = 50;
         else if (service_name == "Room Cleaning")
             this->cost = 15;
-        else if (service_name == "Moonlight Feast\t")
+        else if (service_name == "Moonlight Feast")
             this->cost = 40;
         else if (service_name == "Haunted Call")
             this->cost = 15;
@@ -63,6 +64,7 @@ public:
         this->special = false;
         usage_count = 0;
         set_cost();
+        is_active = true;
     }
     string get_service_name() const {return service_name;}
     void make_special()
@@ -77,6 +79,9 @@ public:
     {
         return (usage_count * cost);
     }
+    bool is_active_or_not () {return is_active;}
+    void activate()  {is_active = true;}
+    void deactivate() {is_active = false;}
 };
 
 class Room
@@ -323,11 +328,16 @@ public:
         }
 
         bool service_found = false;
+        int service_index = 0;
+        bool flag = false;
         for (Service s: services)
         {
+            service_index++;
             if (s.get_service_name() == service_name)
             {
-                service_found = true;
+                if (s.is_active_or_not())
+                    service_found = true;
+                flag = true;
                 break;
             }
         }
@@ -336,8 +346,15 @@ public:
             cout << "service " << service_name << " has been added already" << endl;
             return;
         }
-        service.create_service(service_name);
-        services.push_back(service);
+        if (flag)
+        {
+            services[service_index].activate();
+        }
+        else
+        {
+            service.create_service(service_name);
+            services.push_back(service);
+        }
         cout << "service " << service_name << " has been added successfully" << endl;
     }
 
@@ -373,7 +390,7 @@ public:
             cout << "service " << service_name << " does not exist" << endl;
             return;
         }
-        services.erase(services.begin() + i);
+        services[i].deactivate();
         cout << "service " << service_name << " has been removed successfully" << endl;
     }
 
@@ -728,7 +745,7 @@ public:
         int service_index = 0;
         for (service_index = 0; service_index < services.size(); service_index++)
         {
-            if (services[service_index].get_service_name() == service_name)
+            if (services[service_index].get_service_name() == service_name && services[service_index].is_active_or_not())
             {
                 service_found = true;
                 break;
@@ -1009,7 +1026,7 @@ public:
             {
                 sort(services.begin(), services.end(), [](Service& a, Service& b)
                 {
-                    if (a.get_usage_count() != b.get_usage_count())
+                    if (a.get_income() != b.get_income())
                         return a.get_income() > b.get_income();
                     return a.get_service_name() < b.get_service_name();
                 });
