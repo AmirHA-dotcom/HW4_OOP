@@ -148,7 +148,7 @@ private:
     vector<Service> services_used;
     Room room;
     bool is_checked_in;
-    int total_cost;
+    double total_cost;
 public:
     void register_guest(string& first_name, string& last_name, string& ID, string& phone_number)
     {
@@ -186,7 +186,14 @@ public:
     {
         total_cost += cost;
     }
-    float get_total_cost() const {return total_cost;}
+    int get_total_cost() const
+    {
+        if (total_cost > 1000)
+        {
+            return (int)(total_cost * 1.1);
+        }
+        return (int)(total_cost);
+    }
 };
 
 class Calculations
@@ -707,7 +714,7 @@ public:
         {
             total_room_cost *= 1.1;
         }
-        cout << "guest with ID " << guests[guest_index].get_ID() << " has checked out with a cost of " << total_room_cost << endl;
+        cout << "guest with ID " << guests[guest_index].get_ID() << " has checked out with a cost of " << guests[guest_index].get_total_cost() << endl;
         guests[guest_index].check_out();
     }
 
@@ -948,13 +955,10 @@ public:
 
     static void show_total_income(vector<Guest>& guests)
     {
-        float total_income_of_hotel = 0;
+        int total_income_of_hotel = 0;
         for (const Guest& g: guests)
         {
-            if (g.get_total_cost() > 1000)
-                total_income_of_hotel += g.get_total_cost() * 1.1;
-            else
-                total_income_of_hotel += g.get_total_cost();
+           total_income_of_hotel += g.get_total_cost();
         }
 
         cout << "the total income of hotel is " << floor(total_income_of_hotel) << endl;
