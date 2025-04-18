@@ -7,7 +7,6 @@
 
 using namespace std;
 
-float total_income_of_hotel = 0;
 int services_total_income = 0;
 
 
@@ -183,6 +182,7 @@ public:
     {
         total_cost += cost;
     }
+    float get_total_cost() const {return total_cost;}
 };
 
 class Calculations
@@ -595,7 +595,7 @@ public:
         guests[guest_index].set_length_of_stay(length_of_stay);
         guests[guest_index].assign_room(rooms[room_index]);
         rooms[room_index].make_income(Calculations::room_cost(rooms[room_index], guests[guest_index]));
-        total_income_of_hotel += Calculations::room_cost(rooms[room_index], guests[guest_index]);
+        guests[guest_index].add_total_cost(Calculations::room_cost(rooms[room_index], guests[guest_index]));
         cout << "guest " << guests[guest_index].get_first_name() << " " << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked in successfully" << endl;
     }
 
@@ -636,7 +636,7 @@ public:
         guests[guest_index].set_length_of_stay(length_of_stay);
         guests[guest_index].assign_room(rooms[room_index]);
         rooms[room_index].make_income(Calculations::room_cost(rooms[room_index], guests[guest_index]));
-        total_income_of_hotel += Calculations::room_cost(rooms[room_index], guests[guest_index]);
+        guests[guest_index].add_total_cost(Calculations::room_cost(rooms[room_index], guests[guest_index]));
         cout << "guest " << guests[guest_index].get_first_name() << " " << guests[guest_index].get_last_name() << " with ID " << guests[guest_index].get_ID() << " has been checked into room " << rooms[room_index].get_room_ID() << endl;
     }
 
@@ -690,7 +690,6 @@ public:
         }
         cout << "guest with ID " << guests[guest_index].get_ID() << " has checked out with a cost of " << total_room_cost << endl;
         guests[guest_index].check_out();
-        //rooms[room_index].make_income(total_room_cost);
     }
 
     static void use_service(vector<Service>& services, string& service_name, vector<Guest>& guests, string& guest_ID, vector<Room>& rooms, int& services_total_income)
@@ -748,12 +747,12 @@ public:
                 if (rooms[room_index].get_special_service() == "Haunted Call")
                 {
                     rooms[room_index].make_income(15);
-                    total_income_of_hotel += 15;
+                    guests[guest_index].add_total_cost(15);
                 }
                 else
                 {
                     rooms[room_index].make_income(15);
-                    total_income_of_hotel += 15 * 1.5;
+                    guests[guest_index].add_total_cost(15 * 1.5);
                 }
             }
             else if (services[service_index].get_service_name() == "Vampire Dining")
@@ -761,12 +760,12 @@ public:
                 if (rooms[room_index].get_special_service() == "Vampire Dining")
                 {
                     rooms[room_index].make_income(50);
-                    total_income_of_hotel += 50;
+                    guests[guest_index].add_total_cost(50);
                 }
                 else
                 {
                     rooms[room_index].make_income(50);
-                    total_income_of_hotel += 50 * 1.5;
+                    guests[guest_index].add_total_cost(50 * 1.5);
                 }
             }
             else if (services[service_index].get_service_name() == "Mystic Encounter")
@@ -774,19 +773,19 @@ public:
                 if (rooms[room_index].get_special_service() == "Mystic Encounter")
                 {
                     rooms[room_index].make_income(40);
-                    total_income_of_hotel += 40;
+                    guests[guest_index].add_total_cost(40);
                 }
                 else
                 {
                     rooms[room_index].make_income(40);
-                    total_income_of_hotel += 40 * 1.5;
+                    guests[guest_index].add_total_cost(40 * 1.5);
                 }
             }
         }
         else
         {
             services_total_income += services[service_index].get_cost();
-            total_income_of_hotel += services[service_index].get_cost();
+            guests[guest_index].add_total_cost(services[service_index].get_cost());
         }
 
         services[service_index].use();
@@ -920,26 +919,26 @@ public:
         {
             rooms_total_income += r.get_total_income();
         }
-        float tax = 1;
-        if (rooms_total_income > 1000)
-            tax = 1.1;
-        cout << "the total income from rooms is " << floor(rooms_total_income * tax) << endl;
+        cout << "the total income from rooms is " << floor(rooms_total_income) << endl;
     }
 
     static void show_services_income(int& services_income)
     {
-        float tax = 1;
-        if (services_total_income > 1000)
-            tax = 1.1;
-        cout << "the total income from services is " << floor(services_income * tax) << endl;
+        cout << "the total income from services is " << floor(services_income) << endl;
     }
 
-    static void show_total_income()
+    static void show_total_income(vector<Guest>& guests)
     {
-        float tax = 1;
-        if (total_income_of_hotel > 1000)
-            tax = 1.1;
-        cout << "the total income of hotel is " << floor(total_income_of_hotel * tax) << endl;
+        float total_income_of_hotel = 0;
+        for (const Guest& g: guests)
+        {
+            if (g.get_total_cost() > 1000)
+                total_income_of_hotel += g.get_total_cost() * 1.1;
+            else
+                total_income_of_hotel += g.get_total_cost();
+        }
+
+        cout << "the total income of hotel is " << floor(total_income_of_hotel) << endl;
     }
 
     static void sort_things(string room_or_service, string type_of_sort, vector<Room> rooms, vector<Service> services)
@@ -948,10 +947,12 @@ public:
         {
             if (type_of_sort == "use")
             {
-                sort(rooms.begin(), rooms.end(), [](Room& a, Room& b) {
+                sort(rooms.begin(), rooms.end(), [](Room& a, Room& b)
+                {
                     if (a.get_check_in_count() != b.get_check_in_count())
-                        return a.get_check_in_count() < b.get_check_in_count();
-                    return a.get_room_ID() < b.get_room_ID();});
+                        return a.get_check_in_count() > b.get_check_in_count();
+                    return a.get_room_ID() < b.get_room_ID();
+                });
                 for (Room r: rooms)
                 {
                     cout << r.get_room_ID() << ": " << r.get_check_in_count() << endl;
@@ -960,13 +961,30 @@ public:
 
             else if (type_of_sort == "income")
             {
-                sort(rooms.begin(), rooms.end(), [](Room& a, Room& b) {
+                sort(rooms.begin(), rooms.end(), [](Room& a, Room& b)
+                {
                     if (a.get_total_income() != b.get_total_income())
                         return a.get_total_income() > b.get_total_income();
-                    return a.get_room_ID() < b.get_room_ID();});
+                    return a.get_room_ID() < b.get_room_ID();
+                });
                 for (Room r: rooms)
                 {
                     cout << r.get_room_ID() << ": " << r.get_total_income() << endl;
+                }
+            }
+            else
+            {
+                sort(rooms.begin(), rooms.end(), [](Room& a, Room& b)
+                {
+                    if (a.get_check_in_count() != b.get_check_in_count())
+                        return a.get_check_in_count() > b.get_check_in_count();
+                    if (a.get_total_income() != b.get_total_income())
+                        return a.get_total_income() > b.get_total_income();
+                    return a.get_room_ID() < b.get_room_ID();
+                });
+                for (Room r: rooms)
+                {
+                    cout << r.get_room_ID() << ": " << r.get_check_in_count() << " - " << r.get_total_income() << endl;
                 }
             }
         }
@@ -975,9 +993,10 @@ public:
         {
             if (type_of_sort == "use")
             {
-                sort(services.begin(), services.end(), [](const Service& a, const Service& b) {
+                sort(services.begin(), services.end(), [](const Service& a, const Service& b)
+                {
                     if (a.get_usage_count() != b.get_usage_count())
-                        return a.get_usage_count() < b.get_usage_count();
+                        return a.get_usage_count() > b.get_usage_count();
                     return a.get_service_name() < b.get_service_name();
                 });
                 for (Service s: services)
@@ -988,14 +1007,30 @@ public:
 
             else if (type_of_sort == "income")
             {
-                sort(services.begin(), services.end(), [](Service& a, Service& b) {
+                sort(services.begin(), services.end(), [](Service& a, Service& b)
+                {
                     if (a.get_usage_count() != b.get_usage_count())
-                        return a.get_income() < b.get_income();
+                        return a.get_income() > b.get_income();
                     return a.get_service_name() < b.get_service_name();
                 });
                 for (Service s: services)
                 {
                     cout << s.get_service_name() << ": " << s.get_income() << endl;
+                }
+            }
+            else
+            {
+                sort(services.begin(), services.end(), [](Service& a, Service& b)
+                {
+                    if (a.get_usage_count() != b.get_usage_count())
+                        return a.get_usage_count() > b.get_usage_count();
+                    if (a.get_income() != b.get_income())
+                        return a.get_income() > b.get_income();
+                    return a.get_service_name() < b.get_service_name();
+                });
+                for (Service s: services)
+                {
+                    cout << s.get_service_name() << ": " << s.get_usage_count() << " - " << s.get_income() << endl;
                 }
             }
         }
@@ -1019,7 +1054,7 @@ int main ()
     regex check_out_pattern (R"(^check out guest (\S+) (\S+) (\S+)$)");
     regex use_services_pattern (R"(^use service (\S+)(?: (\S+))? by guest (\S+)$)");
     regex show_guest_INFO_pattern ("^show guest information (\\S+)$");
-    regex show_room_INFO_pattern ("^show room information (\\S)$");
+    regex show_room_INFO_pattern ("^show room information (\\S+)$");
     regex show_popular_room ("^show the most popular room type$");
     regex show_popular_service ("^show the most frequent service$");
     regex show_total_income ("^show the total income of hotel$");
@@ -1167,7 +1202,7 @@ int main ()
 
         if (regex_match(command, show_total_income))
         {
-            Controller::show_total_income();
+            Controller::show_total_income(guests);
             continue;
         }
 
