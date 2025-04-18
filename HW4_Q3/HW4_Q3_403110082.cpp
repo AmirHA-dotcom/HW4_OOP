@@ -9,7 +9,6 @@ using namespace std;
 
 int services_total_income = 0;
 
-
 class Manager
 {
 private:
@@ -222,9 +221,9 @@ public:
             if (s.get_service_name() == "Haunted Call")
                 times_used_Haunted_Call++;
             else if (s.get_service_name() == "Vampire Dining")
-               times_used_Vampire_Dining++;
+                times_used_Vampire_Dining++;
             else if (s.get_service_name() == "Mystic Encounter")
-               times_used_Mystic_Encounter++;
+                times_used_Mystic_Encounter++;
         }
 
         if (room.has_special_services())
@@ -278,8 +277,11 @@ class Controller
 {
 public:
     static int number_of_Coffin_Retreat_rooms;
+    static bool Coffin_Retreat_found;
     static int number_of_Counts_Suite_rooms;
+    static bool Counts_Suite_found;
     static int number_of_Haunted_Chamber_rooms;
+    static bool Huanted_Chamber_found;
     static void register_manager(vector<Manager>& managers, Manager& manager, string& first_name, string& last_name, string& ID)
     {
         for (Manager& m: managers)
@@ -485,13 +487,13 @@ public:
         }
         room.add_room(room_ID, room_type, beds_count, price, special_services_included, special_service);
         rooms.push_back(room);
-        if (special_services_included)
-        {
-            Service new_service;
-            new_service.create_service(special_service);
-            new_service.make_special();
-            services.push_back(new_service);
-        }
+//        if (special_services_included)
+//        {
+//            Service new_service;
+//            new_service.create_service(special_service);
+//            new_service.make_special();
+//            services.push_back(new_service);
+//        }
         cout << "room "<< room_ID <<" with type of " << room_type << " has been added successfully" << endl;
     }
 
@@ -703,7 +705,7 @@ public:
         float total_room_cost = Calculations::room_cost(rooms[room_index], guests[guest_index]) + Calculations::service_cost(rooms[room_index], guests[guest_index]);
         if (total_room_cost > 1000)
         {
-           total_room_cost *= 1.1;
+            total_room_cost *= 1.1;
         }
         cout << "guest with ID " << guests[guest_index].get_ID() << " has checked out with a cost of " << total_room_cost << endl;
         guests[guest_index].check_out();
@@ -1018,7 +1020,8 @@ public:
                 });
                 for (Service s: services)
                 {
-                    cout << s.get_service_name() << ": " << s.get_usage_count() << endl;
+                    if (!s.is_special())
+                        cout << s.get_service_name() << ": " << s.get_usage_count() << endl;
                 }
             }
 
@@ -1032,7 +1035,8 @@ public:
                 });
                 for (Service s: services)
                 {
-                    cout << s.get_service_name() << ": " << s.get_income() << endl;
+                    if (!s.is_special())
+                        cout << s.get_service_name() << ": " << s.get_income() << endl;
                 }
             }
             else
@@ -1047,7 +1051,8 @@ public:
                 });
                 for (Service s: services)
                 {
-                    cout << s.get_service_name() << ": " << s.get_usage_count() << " - " << s.get_income() << endl;
+                    if (!s.is_special())
+                        cout << s.get_service_name() << ": " << s.get_usage_count() << " - " << s.get_income() << endl;
                 }
             }
         }
@@ -1248,3 +1253,6 @@ int main ()
 int Controller::number_of_Coffin_Retreat_rooms = 0;
 int Controller::number_of_Counts_Suite_rooms = 0;
 int Controller::number_of_Haunted_Chamber_rooms = 0;
+bool Controller::Coffin_Retreat_found = false;
+bool Controller::Counts_Suite_found = false;
+bool Controller::Huanted_Chamber_found = false;
