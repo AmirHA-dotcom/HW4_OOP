@@ -215,7 +215,7 @@ public:
     {
         for (auto node : model.get_nodes())
         {
-            SDL_Rect rect = {node->x, node->y, 200, 50};
+            SDL_Rect rect = {node->x, node->y, 100, 50};
             if (node->type == Node_Type::Drawing)
                 SDL_SetRenderDrawColor(renderer, 173, 216, 230, 255);
             else if (node->type == Node_Type::Peg)
@@ -258,7 +258,7 @@ public:
             SDL_Rect composite_node_button{1000, 750, 150, 150};
             for (auto node : model.get_nodes())
             {
-                SDL_Rect node_rect{node->x, node->y, 200, 50};
+                SDL_Rect node_rect{node->x, node->y, 100, 50};
                 if (click_in_rect(mouse_x, mouse_y, node_rect))
                 {
                     dragged_node = node;
@@ -267,7 +267,7 @@ public:
                     offset_y = mouse_y - node->y;
                     original_x = node->x;
                     original_y = node->y;
-                    return;
+                    break;
                 }
             }
             if (click_in_rect(mouse_x, mouse_y, Node_Library_Button))
@@ -327,11 +327,11 @@ public:
                 int mouse_x = event.button.x;
                 int mouse_y = event.button.y;
                 bool overlapping = false;
-                SDL_Rect new_node_rect{dragged_node->x, dragged_node->y, 200, 50};
+                SDL_Rect new_node_rect{dragged_node->x, dragged_node->y, 100, 50};
                 for (auto node : model.get_nodes())
                 {
                     if (node == dragged_node) continue;
-                    SDL_Rect other_rect{node->x, node->y, 200, 50};
+                    SDL_Rect other_rect{node->x, node->y, 100, 50};
                     if (rects_overlap(new_node_rect, other_rect))
                     {
                         overlapping = true;
@@ -349,10 +349,9 @@ public:
                     else
                     {
                         model.delete_node(dragged_node);
-                        new_node_dragged = false;
                     }
                 }
-
+                new_node_dragged = false;
                 dragging = false;
                 dragged_node = nullptr;
                 cout << "Mouse Button Release Detected!!!" << endl;
