@@ -7,6 +7,18 @@
 
 using namespace std;
 
+// Functions ===========================================================================================================
+bool click_in_rect(int x, int y, const SDL_Rect& rect)
+{
+    return (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h);
+}
+bool rects_overlap(const SDL_Rect& a, const SDL_Rect& b)
+{
+    return (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y);
+}
+
+
+
 // Model & Data Base ===================================================================================================
 
 enum class Node_Type { Drawing, Peg, Composite };
@@ -184,10 +196,37 @@ public:
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_Rect Drawing_Node{400, 750, 150, 150};
         SDL_RenderFillRect(renderer, &Drawing_Node);
+// Peg Node Icon
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_Rect Peg_Node{700, 750, 150, 150};
+        SDL_RenderFillRect(renderer, &Peg_Node);
+// Composite Node Icon
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_Rect Composite_Node{1000, 750, 150, 150};
+        SDL_RenderFillRect(renderer, &Composite_Node);
 
+
+
+        render_nodes(model);
 
         SDL_RenderPresent(renderer);
     }
+    void render_nodes(const Model& model)
+    {
+        for (auto node : model.get_nodes())
+        {
+            SDL_Rect rect = {node->x, node->y, 200, 50};
+            if (node->type == Node_Type::Drawing)
+                SDL_SetRenderDrawColor(renderer, 173, 216, 230, 255);
+            else if (node->type == Node_Type::Peg)
+                SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+            else if (node->type == Node_Type::Composite)
+                SDL_SetRenderDrawColor(renderer, 0, 0, 139, 255);
+
+            SDL_RenderFillRect(renderer, &rect);
+        }
+    }
+
 };
 
 // Controller ==========================================================================================================
@@ -197,9 +236,15 @@ class Controller
 private:
     View& view;
     Model& model;
+    bool dragging;
+    Node* dragged_node;
+    int offset_x, offset_y;
+    int original_x;
+    int original_y;
+    bool new_node_dragged = false;
 
 public:
-    Controller(View& v, Model& m) : view(v), model(m) {}
+    Controller(View& v, Model& m) : view(v), model(m) {dragging = false; dragged_node = nullptr; offset_x = 0; offset_y = 0; original_x = 0; original_y = 0;}
 
     void handle_event(SDL_Event& event)
     {
@@ -207,15 +252,113 @@ public:
         {
             int mouse_x = event.button.x;
             int mouse_y = event.button.y;
-            if (mouse_x > 20 && mouse_x < 220 && mouse_y > 720 && mouse_y < 770)
+            SDL_Rect Node_Library_Button{20, 720, 200, 50};
+            SDL_Rect drawing_node_button{400, 750, 150, 150};
+            SDL_Rect peg_node_button{700, 750, 150, 150};
+            SDL_Rect composite_node_button{1000, 750, 150, 150};
+            for (auto node : model.get_nodes())
+            {
+                SDL_Rect node_rect{node->x, node->y, 200, 50};
+                if (click_in_rect(mouse_x, mouse_y, node_rect))
+                {
+                    dragged_node = node;
+                    dragging = true;
+                    offset_x = mouse_x - node->x;
+                    offset_y = mouse_y - node->y;
+                    original_x = node->x;
+                    original_y = node->y;
+                    return;
+                }
+            }
+            if (click_in_rect(mouse_x, mouse_y, Node_Library_Button))
             {
                 cout << "Node Library Detected!!!" << endl;
             }
-            else if (mouse_x > 400 && mouse_x < 550 && mouse_y > 750 && mouse_y < 900)
+            else if (click_in_rect(mouse_x, mouse_y, drawing_node_button))
             {
                 cout << "Drawing Node Detected!!!" << endl;
+                dragged_node = model.create_node(Node_Type::Drawing, mouse_x, mouse_y);
+                dragging = true;
+                offset_x = 0;
+                offset_y = 0;
+                original_x = dragged_node->x;
+                original_y = dragged_node->y;
+                new_node_dragged = true;
+            }
+            else if (click_in_rect(mouse_x, mouse_y, peg_node_button))
+            {
+                cout << "Peg Node Detected!!!" << endl;
+                dragged_node = model.create_node(Node_Type::Peg, mouse_x, mouse_y);
+                dragging = true;
+                offset_x = 0;
+                offset_y = 0;
+                original_x = dragged_node->x;
+                original_y = dragged_node->y;
+                new_node_dragged = true;
+            }
+            else if (click_in_rect(mouse_x, mouse_y, composite_node_button))
+            {
+                cout << "Composite Node Detected!!!" << endl;
+                dragged_node = model.create_node(Node_Type::Composite, mouse_x, mouse_y);
+                dragging = true;
+                offset_x = 0;
+                offset_y = 0;
+                original_x = dragged_node->x;
+                original_y = dragged_node->y;
+                new_node_dragged = true;
             }
         }
+        else if (event.type == SDL_MOUSEMOTION)
+        {
+            if (dragging && dragged_node)
+            {
+                int mouseX = event.motion.x;
+                int mouseY = event.motion.y;
+
+                dragged_node->x = mouseX - offset_x;
+                dragged_node->y = mouseY - offset_y;
+                //cout << "Dragging Detected" << endl;
+            }
+        }
+        else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT)
+        {
+            if (dragging)
+            {
+                int mouse_x = event.button.x;
+                int mouse_y = event.button.y;
+                bool overlapping = false;
+                SDL_Rect new_node_rect{dragged_node->x, dragged_node->y, 200, 50};
+                for (auto node : model.get_nodes())
+                {
+                    if (node == dragged_node) continue;
+                    SDL_Rect other_rect{node->x, node->y, 200, 50};
+                    if (rects_overlap(new_node_rect, other_rect))
+                    {
+                        overlapping = true;
+                        break;
+                    }
+                }
+                if (mouse_y > 650 && mouse_y < 950 || overlapping)
+                {
+                    cout << "Wrong Place!!!" << endl;
+                    if (find(model.get_nodes().begin(), model.get_nodes().end(), dragged_node) != model.get_nodes().end() && !new_node_dragged)
+                    {
+                        dragged_node->x = original_x;
+                        dragged_node->y = original_y;
+                    }
+                    else
+                    {
+                        model.delete_node(dragged_node);
+                        new_node_dragged = false;
+                    }
+                }
+
+                dragging = false;
+                dragged_node = nullptr;
+                cout << "Mouse Button Release Detected!!!" << endl;
+            }
+        }
+
     }
 };
 
