@@ -143,8 +143,6 @@ public:
     const std::vector<Wire*>& get_wires() const { return wires; }
 };
 
-
-
 // View ================================================================================================================
 
 class View
@@ -247,6 +245,17 @@ public:
         SDL_RenderDrawLine(renderer, 1000, 750, 1000, 900);
         SDL_RenderDrawLine(renderer, 1150, 750, 1150, 900);
 
+// Side Bar
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_Rect side_bar{0, 0, 50, 700};
+        SDL_RenderFillRect(renderer, &side_bar);
+        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+        SDL_RenderDrawLine(renderer, 50, 0, 50, 700);
+        SDL_RenderDrawLine(renderer, 0, 700, 50, 700);
+        SDL_SetRenderDrawColor(renderer, 240, 240, 240, 255);
+        SDL_Rect deleter{15, 15, 20, 20};
+        SDL_RenderFillRect(renderer, &deleter);
+
 
         render_nodes(model);
 
@@ -282,10 +291,12 @@ private:
     int offset_x, offset_y;
     int original_x;
     int original_y;
-    bool new_node_dragged = false;
+    bool new_node_dragged;
+    bool delete_mode;
 
 public:
-    Controller(View& v, Model& m) : view(v), model(m) {dragging = false; dragged_node = nullptr; offset_x = 0; offset_y = 0; original_x = 0; original_y = 0;}
+    Controller(View& v, Model& m) : view(v), model(m)
+    {dragging = false; dragged_node = nullptr; offset_x = 0; offset_y = 0; original_x = 0; original_y = 0; new_node_dragged = false; delete_mode = false;}
 
     void handle_event(SDL_Event& event)
     {
@@ -297,11 +308,17 @@ public:
             SDL_Rect drawing_node_button{400, 750, 150, 150};
             SDL_Rect peg_node_button{700, 750, 150, 150};
             SDL_Rect composite_node_button{1000, 750, 150, 150};
+            SDL_Rect deleter{15, 15, 20, 20};
             for (auto node : model.get_nodes())
             {
                 SDL_Rect node_rect{node->x, node->y, 100, 50};
                 if (click_in_rect(mouse_x, mouse_y, node_rect))
                 {
+                    if (delete_mode)
+                    {
+                        model.delete_node(node);
+                        break;
+                    }
                     dragged_node = node;
                     dragging = true;
                     offset_x = mouse_x - node->x;
@@ -311,6 +328,7 @@ public:
                     break;
                 }
             }
+            delete_mode = false;
             if (click_in_rect(mouse_x, mouse_y, Node_Library_Button))
             {
                 cout << "Node Library Detected!!!" << endl;
@@ -348,6 +366,11 @@ public:
                 original_y = dragged_node->y;
                 new_node_dragged = true;
             }
+            else if (click_in_rect(mouse_x, mouse_y, deleter))
+            {
+                delete_mode = true;
+                cout << "Deleter Detected!!!" << endl;
+            }
         }
         else if (event.type == SDL_MOUSEMOTION)
         {
@@ -379,7 +402,8 @@ public:
                         break;
                     }
                 }
-                if (mouse_y > 650 && mouse_y < 950 || overlapping)
+                SDL_Rect side_bar{0, 0, 50, 700};
+                if ((mouse_y > 650 && mouse_y < 950) || overlapping || (rects_overlap(side_bar, new_node_rect)))
                 {
                     cout << "Wrong Place!!!" << endl;
                     if (find(model.get_nodes().begin(), model.get_nodes().end(), dragged_node) != model.get_nodes().end() && !new_node_dragged)
