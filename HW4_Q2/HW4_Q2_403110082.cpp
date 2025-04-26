@@ -180,6 +180,11 @@ public:
         SDL_RenderDrawLine(renderer, 20, 720, 20, 770);
         SDL_RenderDrawLine(renderer, 20, 720, 20, 770);
 
+// Drawing Node Icon
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_Rect Drawing_Node{400, 750, 150, 150};
+        SDL_RenderFillRect(renderer, &Drawing_Node);
+
 
         SDL_RenderPresent(renderer);
     }
@@ -198,10 +203,18 @@ public:
 
     void handle_event(SDL_Event& event)
     {
-        if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_w)
+        if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
         {
-            std::cout << "Add waypoint mode!" << std::endl;
-            // model.add_waypoint(...);
+            int mouse_x = event.button.x;
+            int mouse_y = event.button.y;
+            if (mouse_x > 20 && mouse_x < 220 && mouse_y > 720 && mouse_y < 770)
+            {
+                cout << "Node Library Detected!!!" << endl;
+            }
+            else if (mouse_x > 400 && mouse_x < 550 && mouse_y > 750 && mouse_y < 900)
+            {
+                cout << "Drawing Node Detected!!!" << endl;
+            }
         }
     }
 };
