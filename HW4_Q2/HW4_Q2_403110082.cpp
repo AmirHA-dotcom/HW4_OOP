@@ -193,18 +193,59 @@ public:
         SDL_RenderDrawLine(renderer, 20, 720, 20, 770);
 
 // Drawing Node Icon
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_SetRenderDrawColor(renderer, 0, 128, 255, 255);
         SDL_Rect Drawing_Node{400, 750, 150, 150};
         SDL_RenderFillRect(renderer, &Drawing_Node);
+        SDL_RenderFillRect(renderer, &Drawing_Node);
+        SDL_Color textColor2 = {255, 255, 255};
+        const char* text2 = "Drawing";
+        SDL_Surface* textSurface2 = TTF_RenderText_Blended(font, text2, textColor2);
+        SDL_Texture* textTexture2 = SDL_CreateTextureFromSurface(renderer, textSurface2);
+        int text2W, text2H;
+        SDL_QueryTexture(textTexture2, nullptr, nullptr, &text2W, &text2H);
+        SDL_Rect textRect2{Drawing_Node.x + (Drawing_Node.w - text2W) / 2,Drawing_Node.y + (Drawing_Node.h - text2H) / 2,text2W,text2H};
+        SDL_RenderCopy(renderer, textTexture2, nullptr, &textRect2);
+        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+        SDL_RenderDrawLine(renderer, 400, 750, 550, 750);
+        SDL_RenderDrawLine(renderer, 400, 900, 550, 900);
+        SDL_RenderDrawLine(renderer, 400, 750, 400, 900);
+        SDL_RenderDrawLine(renderer, 550, 750, 550, 900);
+
 // Peg Node Icon
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_SetRenderDrawColor(renderer, 0, 168, 107, 255);
         SDL_Rect Peg_Node{700, 750, 150, 150};
         SDL_RenderFillRect(renderer, &Peg_Node);
+        SDL_Color textColor3 = {255, 255, 255};
+        const char* text3 = "Peg Node";
+        SDL_Surface* textSurface3 = TTF_RenderText_Blended(font, text3, textColor3);
+        SDL_Texture* textTexture3 = SDL_CreateTextureFromSurface(renderer, textSurface3);
+        int text3W, text3H;
+        SDL_QueryTexture(textTexture3, nullptr, nullptr, &text3W, &text3H);
+        SDL_Rect textRect3{Peg_Node.x + (Peg_Node.w - text3W) / 2,Peg_Node.y + (Peg_Node.h - text3H) / 2,text3W,text3H};
+        SDL_RenderCopy(renderer, textTexture3, nullptr, &textRect3);
+        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+        SDL_RenderDrawLine(renderer, 700, 750, 850, 750);
+        SDL_RenderDrawLine(renderer, 700, 900, 850, 900);
+        SDL_RenderDrawLine(renderer, 700, 750, 700, 900);
+        SDL_RenderDrawLine(renderer, 850, 750, 850, 900);
+
 // Composite Node Icon
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_SetRenderDrawColor(renderer, 17, 30, 108, 255);
         SDL_Rect Composite_Node{1000, 750, 150, 150};
         SDL_RenderFillRect(renderer, &Composite_Node);
-
+        SDL_Color textColor4 = {255, 255, 255};
+        const char* text4 = "Composite";
+        SDL_Surface* textSurface4 = TTF_RenderText_Blended(font, text4, textColor4);
+        SDL_Texture* textTexture4 = SDL_CreateTextureFromSurface(renderer, textSurface4);
+        int text4W, text4H;
+        SDL_QueryTexture(textTexture4, nullptr, nullptr, &text4W, &text4H);
+        SDL_Rect textRect4{Composite_Node.x + (Composite_Node.w - text4W) / 2,Composite_Node.y + (Composite_Node.h - text4H) / 2,text4W,text4H};
+        SDL_RenderCopy(renderer, textTexture4, nullptr, &textRect4);
+        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+        SDL_RenderDrawLine(renderer, 1000, 750, 1150, 750);
+        SDL_RenderDrawLine(renderer, 1000, 900, 1150, 900);
+        SDL_RenderDrawLine(renderer, 1000, 750, 1000, 900);
+        SDL_RenderDrawLine(renderer, 1150, 750, 1150, 900);
 
 
         render_nodes(model);
@@ -217,11 +258,11 @@ public:
         {
             SDL_Rect rect = {node->x, node->y, 100, 50};
             if (node->type == Node_Type::Drawing)
-                SDL_SetRenderDrawColor(renderer, 173, 216, 230, 255);
+                SDL_SetRenderDrawColor(renderer, 0, 128, 255, 255);
             else if (node->type == Node_Type::Peg)
-                SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+                SDL_SetRenderDrawColor(renderer, 0, 168, 107, 255);
             else if (node->type == Node_Type::Composite)
-                SDL_SetRenderDrawColor(renderer, 0, 0, 139, 255);
+                SDL_SetRenderDrawColor(renderer, 17, 30, 108, 255);
 
             SDL_RenderFillRect(renderer, &rect);
         }
