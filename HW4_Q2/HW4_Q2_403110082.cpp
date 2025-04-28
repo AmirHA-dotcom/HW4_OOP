@@ -43,34 +43,33 @@ class Node
 public:
     Node_Type type;
     int x, y;
-    vector<Port> input_ports;
-    vector<Port> output_ports;
+    Port input_ports[10];
+    Port output_ports[10];
+    int active_input_count = 0;
+    int active_output_count = 10;
 
     Node(Node_Type t, int posX, int posY) : type(t), x(posX), y(posY)
     {
-        if (type == Node_Type::Drawing)
+        if (type == Node_Type::Drawing || type == Node_Type::Peg)
         {
-            input_ports.push_back({this, Port_Type::Input, 0});
-        }
-        else if (type == Node_Type::Peg)
-        {
-            input_ports.push_back({this, Port_Type::Input, 0});
-            output_ports.push_back({this, Port_Type::Output, 0});
+            active_input_count = 1;
         }
         else if (type == Node_Type::Composite)
         {
-            // No ports by default, user should add as needed!!!!!!
+            active_input_count = 10;
         }
     }
 
     void add_output_port()
     {
-        output_ports.push_back({this, Port_Type::Output, (int)output_ports.size()});
+        if (active_output_count < 10)
+            active_output_count++;
     }
 
     void add_input_port()
     {
-        input_ports.push_back({this, Port_Type::Input, (int)input_ports.size()});
+        if (type == Node_Type::Composite && active_input_count < 10)
+            active_input_count++;
     }
 };
 
@@ -91,6 +90,8 @@ private:
     vector<Wire*> wires;
 
 public:
+    Port* temp_wire_start = nullptr;  // From which output port we are starting
+
     ~Model()
     {
         for (auto n : nodes) delete n;
@@ -111,6 +112,25 @@ public:
         Wire* wire = new Wire(from, to);
         wires.push_back(wire);
         return wire;
+    }
+
+    void draw_wire_from_start_node_to_cursor(Node* node, int mouse_x, int mouse_y)
+    {
+        if (!node) return;
+
+        temp_wire_start = &node->output_ports[0];
+
+        static Port cursor_port;
+        cursor_port.node = nullptr;
+        cursor_port.type = Port_Type::Input;
+        cursor_port.index = -1;
+
+        Wire temp_wire(temp_wire_start, &cursor_port);
+
+        way_point p1 = { node->x, node->y };
+        way_point p2 = { mouse_x, mouse_y };
+        temp_wire.way_points.push_back(p1);
+        temp_wire.way_points.push_back(p2);
     }
 
     bool is_valid_connection(Port* from, Port* to)
@@ -276,6 +296,11 @@ public:
             SDL_RenderFillRect(renderer, &rect);
         }
     }
+    void draw_temp_wire(const Model& model)
+    {
+
+    }
+
 
 };
 
@@ -293,10 +318,16 @@ private:
     int original_y;
     bool new_node_dragged;
     bool delete_mode;
+    Node* start_wire_node;
+    Node* end_wire_node;
+    bool wiring_mode;
 
 public:
     Controller(View& v, Model& m) : view(v), model(m)
-    {dragging = false; dragged_node = nullptr; offset_x = 0; offset_y = 0; original_x = 0; original_y = 0; new_node_dragged = false; delete_mode = false;}
+    {
+        dragging = false; dragged_node = nullptr; offset_x = 0; offset_y = 0; original_x = 0; original_y = 0; new_node_dragged = false; delete_mode = false;
+        start_wire_node = nullptr; end_wire_node = nullptr; wiring_mode = false;
+    }
 
     void handle_event(SDL_Event& event)
     {
@@ -370,6 +401,21 @@ public:
             {
                 delete_mode = true;
                 cout << "Deleter Detected!!!" << endl;
+            }
+        }
+        else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT)
+        {
+            int mouse_x = event.button.x;
+            int mouse_y = event.button.y;
+
+            for (auto& node:model.get_nodes())
+            {
+                SDL_Rect current_node{node->x, node->y, 100, 50};
+                if (click_in_rect(mouse_x, mouse_y, current_node))
+                {
+                    wiring_mode = true;
+                    start_wire_node = node;
+                }
             }
         }
         else if (event.type == SDL_MOUSEMOTION)
