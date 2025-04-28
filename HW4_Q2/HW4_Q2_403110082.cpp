@@ -36,8 +36,8 @@ class Node
     int active_input_count = 0;
     int active_output_count = 10;
 public:
-    Node_Type type;
     int x, y;
+    Node_Type type;
 
     Node(Node_Type t, int posX, int posY) : type(t), x(posX), y(posY)
     {
@@ -280,7 +280,31 @@ public:
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         for (auto& wire: model.get_wires())
         {
-            SDL_RenderDrawLine(renderer, wire->from_x, wire->from_y, wire->to_x, wire->to_y);
+        // Notice: this part is Completely copied from CHAT_GPT!!!
+            float x0 = wire->from_x;
+            float y0 = wire->from_y;
+            float x1 = wire->to_x;
+            float y1 = wire->to_y;
+
+            float cx0 = x0 + (x1 - x0) / 2;
+            float cy0 = y0;
+            float cx1 = x0 + (x1 - x0) / 2;
+            float cy1 = y1;
+
+            const int STEPS = 30;
+            for (int i = 0; i < STEPS; ++i)
+            {
+                float t1 = i / (float)STEPS;
+                float t2 = (i + 1) / (float)STEPS;
+
+                float xa = (1 - t1) * (1 - t1) * (1 - t1) * x0 + 3 * (1 - t1) * (1 - t1) * t1 * cx0 + 3 * (1 - t1) * t1 * t1 * cx1 + t1 * t1 * t1 * x1;
+                float ya = (1 - t1) * (1 - t1) * (1 - t1) * y0 + 3 * (1 - t1) * (1 - t1) * t1 * cy0 + 3 * (1 - t1) * t1 * t1 * cy1 + t1 * t1 * t1 * y1;
+
+                float xb = (1 - t2) * (1 - t2) * (1 - t2) * x0 + 3 * (1 - t2) * (1 - t2) * t2 * cx0 + 3 * (1 - t2) * t2 * t2 * cx1 + t2 * t2 * t2 * x1;
+                float yb = (1 - t2) * (1 - t2) * (1 - t2) * y0 + 3 * (1 - t2) * (1 - t2) * t2 * cy0 + 3 * (1 - t2) * t2 * t2 * cy1 + t2 * t2 * t2 * y1;
+
+                SDL_RenderDrawLine(renderer, (int)xa, (int)ya, (int)xb, (int)yb);
+            }
         }
     }
 };
