@@ -94,7 +94,6 @@ public:
 
     Wire* create_wire(int from_x, int from_y, int to_x, int to_y)
     {
-
         Wire* wire = new Wire(from_x, from_y, to_x, to_y);
         wires.push_back(wire);
         return wire;
@@ -117,7 +116,7 @@ public:
 
     void delete_node(Node* node)
     {
-        nodes.erase(std::remove(nodes.begin(), nodes.end(), node), nodes.end());
+        nodes.erase(remove(nodes.begin(), nodes.end(), node), nodes.end());
         delete node;
     }
     void switch_wiring_mode(bool stat)
@@ -126,8 +125,8 @@ public:
     }
     bool is_wiring_mode() const{return wiring_mode;}
 
-    const std::vector<Node*>& get_nodes() const { return nodes; }
-    const std::vector<Wire*>& get_wires() const { return wires; }
+    const vector<Node*>& get_nodes() const { return nodes; }
+    const vector<Wire*>& get_wires() const { return wires; }
 };
 
 // View ================================================================================================================
@@ -245,6 +244,7 @@ public:
 
 
         render_nodes(model);
+        render_wires(model);
         if (model.is_wiring_mode())
         {
             draw_temp_wire(model);
@@ -268,15 +268,21 @@ public:
     }
     void draw_temp_wire(const Model& model)
     {
-        int start_x = model.get_wiring_start_node()->x;
-        int start_y = model.get_wiring_start_node()->y;
+        int start_x = model.get_wiring_start_node()->x + (10 - model.get_wiring_start_node()->get_active_output_count()) * 10;
+        int start_y = model.get_wiring_start_node()->y + 50;
         int end_x = model.get_wiring_x();
         int end_y = model.get_wiring_y();
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawLine(renderer, start_x, start_y, end_x, end_y);
     }
-
-
+    void render_wires(const Model& model)
+    {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        for (auto& wire: model.get_wires())
+        {
+            SDL_RenderDrawLine(renderer, wire->from_x, wire->from_y, wire->to_x, wire->to_y);
+        }
+    }
 };
 
 // Controller ==========================================================================================================
@@ -450,6 +456,19 @@ public:
         }
         else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_RIGHT)
         {
+            int mouse_x = event.button.x;
+            int mouse_y = event.button.y;
+            for (auto& node: model.get_nodes())
+            {
+                SDL_Rect current_node{node->x, node->y, 100, 50};
+                if (click_in_rect(mouse_x, mouse_y, current_node) && model.get_wiring_start_node()->get_active_output_count() != 0)
+                {
+                    model.create_wire(model.get_wiring_start_node()->x + (10 - model.get_wiring_start_node()->get_active_output_count()) * 10, model.get_wiring_start_node()->y + 50, node->x + 50, node->y);
+                    cout << "Wired Up!!!" << endl;
+                    model.get_wiring_start_node()->use_output();
+                    node->use_input();
+                }
+            }
             if (wiring_mode)
             {
                 wiring_mode = false;
