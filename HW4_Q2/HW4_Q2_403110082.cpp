@@ -22,7 +22,6 @@ bool rects_overlap(const SDL_Rect& a, const SDL_Rect& b)
 // Model & Data Base ===================================================================================================
 
 enum class Node_Type { Drawing, Peg, Composite };
-enum class Port_Type { Input, Output };
 class Node;
 class Wire;
 
@@ -31,22 +30,14 @@ struct way_point
     int x, y;
 };
 
-struct Port
-{
-    Node* node;
-    Port_Type type;
-    int index;
-};
 
 class Node
 {
+    int active_input_count = 0;
+    int active_output_count = 10;
 public:
     Node_Type type;
     int x, y;
-    Port input_ports[10];
-    Port output_ports[10];
-    int active_input_count = 0;
-    int active_output_count = 10;
 
     Node(Node_Type t, int posX, int posY) : type(t), x(posX), y(posY)
     {
@@ -59,27 +50,21 @@ public:
             active_input_count = 10;
         }
     }
-
-    void add_output_port()
-    {
-        if (active_output_count < 10)
-            active_output_count++;
-    }
-
-    void add_input_port()
-    {
-        if (type == Node_Type::Composite && active_input_count < 10)
-            active_input_count++;
-    }
+    int get_active_input_count() const {return active_input_count;}
+    int get_active_output_count() const {return active_output_count;}
+    void use_input() {active_input_count--;}
+    void use_output() {active_output_count--;}
 };
 
 struct Wire
 {
-    Port* from;
-    Port* to;
+    int from_x;
+    int from_y;
+    int to_x;
+    int to_y;
     vector<way_point> way_points;
 
-    Wire(Port* f, Port* t) : from(f), to(t) {}
+    Wire(int fx, int fy, int tx, int ty) : from_x(fx), from_y(fy), to_x(tx), to_y(ty) {}
 };
 
 
@@ -88,9 +73,11 @@ class Model
 private:
     vector<Node*> nodes;
     vector<Wire*> wires;
-
+    int temp_cursor_x;
+    int temp_cursor_y;
+    Node* wiring_node;
+    bool wiring_mode = false;
 public:
-    Port* temp_wire_start = nullptr;  // From which output port we are starting
 
     ~Model()
     {
@@ -105,59 +92,39 @@ public:
         return node;
     }
 
-    Wire* create_wire(Port* from, Port* to)
+    Wire* create_wire(int from_x, int from_y, int to_x, int to_y)
     {
-        if (!is_valid_connection(from, to)) return nullptr;
 
-        Wire* wire = new Wire(from, to);
+        Wire* wire = new Wire(from_x, from_y, to_x, to_y);
         wires.push_back(wire);
         return wire;
     }
 
-    void draw_wire_from_start_node_to_cursor(Node* node, int mouse_x, int mouse_y)
+    void cursor_pos_wiring(int cx, int cy)
     {
-        if (!node) return;
-
-        temp_wire_start = &node->output_ports[0];
-
-        static Port cursor_port;
-        cursor_port.node = nullptr;
-        cursor_port.type = Port_Type::Input;
-        cursor_port.index = -1;
-
-        Wire temp_wire(temp_wire_start, &cursor_port);
-
-        way_point p1 = { node->x, node->y };
-        way_point p2 = { mouse_x, mouse_y };
-        temp_wire.way_points.push_back(p1);
-        temp_wire.way_points.push_back(p2);
+        temp_cursor_x = cx;
+        temp_cursor_y = cy;
     }
 
-    bool is_valid_connection(Port* from, Port* to)
+    int get_wiring_x() const{return temp_cursor_x;}
+    int get_wiring_y() const{return temp_cursor_y;}
+
+    void set_wiring_start_node(Node* node)
     {
-        if (from->type != Port_Type::Output || to->type != Port_Type::Input) return false;
-
-        Node_Type fromType = from->node->type;
-        Node_Type toType = to->node->type;
-
-        if (toType == Node_Type::Drawing) return true;
-        if (toType == Node_Type::Peg && fromType == Node_Type::Peg) return true;
-        if (toType == Node_Type::Composite && fromType != Node_Type::Peg) return true;
-
-        return false;
+        wiring_node = node;
     }
+    Node* get_wiring_start_node() const{return wiring_node;}
 
     void delete_node(Node* node)
     {
-        wires.erase(remove_if(wires.begin(), wires.end(), [node](Wire* w) {
-            bool to_delete = (w->from->node == node || w->to->node == node);
-            if (to_delete) delete w;
-            return to_delete;
-        }), wires.end());
-
         nodes.erase(std::remove(nodes.begin(), nodes.end(), node), nodes.end());
         delete node;
     }
+    void switch_wiring_mode(bool stat)
+    {
+        wiring_mode = stat;
+    }
+    bool is_wiring_mode() const{return wiring_mode;}
 
     const std::vector<Node*>& get_nodes() const { return nodes; }
     const std::vector<Wire*>& get_wires() const { return wires; }
@@ -278,7 +245,10 @@ public:
 
 
         render_nodes(model);
-
+        if (model.is_wiring_mode())
+        {
+            draw_temp_wire(model);
+        }
         SDL_RenderPresent(renderer);
     }
     void render_nodes(const Model& model)
@@ -298,7 +268,12 @@ public:
     }
     void draw_temp_wire(const Model& model)
     {
-
+        int start_x = model.get_wiring_start_node()->x;
+        int start_y = model.get_wiring_start_node()->y;
+        int end_x = model.get_wiring_x();
+        int end_y = model.get_wiring_y();
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawLine(renderer, start_x, start_y, end_x, end_y);
     }
 
 
@@ -415,19 +390,24 @@ public:
                 {
                     wiring_mode = true;
                     start_wire_node = node;
+                    model.set_wiring_start_node(start_wire_node);
+                    model.switch_wiring_mode(true);
                 }
             }
         }
         else if (event.type == SDL_MOUSEMOTION)
         {
+            int mouseX = event.motion.x;
+            int mouseY = event.motion.y;
             if (dragging && dragged_node)
             {
-                int mouseX = event.motion.x;
-                int mouseY = event.motion.y;
-
                 dragged_node->x = mouseX - offset_x;
                 dragged_node->y = mouseY - offset_y;
                 //cout << "Dragging Detected" << endl;
+            }
+            else if (wiring_mode)
+            {
+                model.cursor_pos_wiring(mouseX, mouseY);
             }
         }
         else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT)
@@ -468,7 +448,14 @@ public:
                 cout << "Mouse Button Release Detected!!!" << endl;
             }
         }
-
+        else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_RIGHT)
+        {
+            if (wiring_mode)
+            {
+                wiring_mode = false;
+                model.switch_wiring_mode(false);
+            }
+        }
     }
 };
 
