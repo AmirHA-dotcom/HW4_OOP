@@ -44,8 +44,8 @@ class Node
 {
     int active_input_count = 0;
     int active_output_count = 10;
-    vector<Wire*> input_wires;   // Wires coming into this node
-    vector<Wire*> output_wires;  // Wires going out from this node
+    vector<Wire*> input_wires;
+    vector<Wire*> output_wires;
 public:
     int x, y;
     Node_Type type;
@@ -69,17 +69,19 @@ public:
         x = newX;
         y = newY;
 
-        // Update all output wires (where this node is the source)
-        for (Wire* wire : output_wires) {
-            wire->from_x = newX;
-            wire->from_y = newY;
+        int i = 0;
+        for (Wire* wire : output_wires)
+        {
+            wire->from_x = newX + (10 * i++);
+            wire->from_y = newY + 50;
         }
 
-        // Update all input wires (where this node is the destination)
-        for (Wire* wire : input_wires) {
-            wire->to_x = newX;
+        for (Wire* wire : input_wires)
+        {
+            wire->to_x = newX + 50;
             wire->to_y = newY;
         }
+
     }
     int get_active_input_count() const {return active_input_count;}
     int get_active_output_count() const {return active_output_count;}
@@ -114,12 +116,11 @@ public:
         return node;
     }
 
-    Wire* create_wire(Node* from_node, Node* to_node)
+    Wire* create_wire(Node* from_node, Node* to_node, int from_x, int from_y, int to_x, int to_y)
     {
-        Wire* wire = new Wire(from_node->x, from_node->y, to_node->x, to_node->y);
+        Wire* wire = new Wire(from_x, from_y, to_x, to_y);
         wires.push_back(wire);
 
-        // Connect the wire to both nodes
         from_node->add_output_wire(wire);
         to_node->add_input_wire(wire);
 
@@ -154,17 +155,6 @@ public:
 
     const vector<Node*>& get_nodes() const { return nodes; }
     const vector<Wire*>& get_wires() const { return wires; }
-private:
-    Node* find_node_by_position(int x, int y)
-    {
-        for (Node* node : nodes) {
-            if (node->x == x && node->y == y)
-            {
-                return node;
-            }
-        }
-        return nullptr;
-    }
 };
 
 // View ================================================================================================================
@@ -343,7 +333,7 @@ public:
         SDL_SetRenderDrawColor(renderer, 185, 115, 51, 255);
         for (auto& wire: model.get_wires())
         {
-        // Notice: this part is Completely copied from CHAT_GPT!!!
+            // Notice: this part is Completely copied from CHAT_GPT!!!
             float x0 = wire->from_x;
             float y0 = wire->from_y;
             float x1 = wire->to_x;
@@ -536,6 +526,7 @@ public:
                     {
                         dragged_node->x = original_x;
                         dragged_node->y = original_y;
+                        dragged_node->set_position(original_x, original_y);
                     }
                     else
                     {
@@ -564,14 +555,12 @@ public:
                     !(node->type == Node_Type::Composite && wiring_start_node->type == Node_Type::Peg) &&
                     node != wiring_start_node)
                 {
-                    // Calculate connection points
                     int from_x = wiring_start_node->x + (10 - wiring_start_node->get_active_output_count()) * 10;
                     int from_y = wiring_start_node->y + 50;
                     int to_x = node->x + 50;
                     int to_y = node->y;
 
-                    // Create wire between nodes (this will automatically add it to both nodes' wire lists)
-                    model.create_wire(wiring_start_node, node);
+                    model.create_wire(wiring_start_node, node, from_x, from_y, to_x, to_y);
 
                     cout << "Wired Up!!!" << endl;
                     wiring_start_node->use_output();
