@@ -400,6 +400,10 @@ public:
             {
                 SDL_RenderDrawLine(renderer, segment.first.x, segment.first.y, segment.second.x, segment.second.y);
             }
+            SDL_Rect from_box{segments[0].first.x, segments[0].first.y, 4, 4};
+            SDL_RenderFillRect(renderer, &from_box);
+            SDL_Rect to_box{segments[segments.size() - 1].second.x, segments[segments.size() - 1].second.y, 4, 4};
+            SDL_RenderFillRect(renderer, &to_box);
 
             for (const auto& waypoint : wire->waypoints)
             {
