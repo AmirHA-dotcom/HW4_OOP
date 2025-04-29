@@ -392,7 +392,7 @@ public:
         for (auto& wire: model.get_wires())
         {
             if (wire->selected)
-                SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); 
+                SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
             else
                 SDL_SetRenderDrawColor(renderer, 185, 115, 51, 255);
             auto segments = wire->get_wire_segments();
@@ -418,7 +418,9 @@ public:
 
 class Controller
 {
-private:Model& model;
+private:
+    View& view;
+    Model& model;
     bool dragging;
     Node* dragged_node;
     int offset_x, offset_y;
@@ -427,15 +429,16 @@ private:Model& model;
     bool new_node_dragged;
     bool delete_mode;
     Node* start_wire_node;
+    Node* end_wire_node;
     bool wiring_mode;
     bool dragging_waypoint = false;
     int waypoint_offset_x, waypoint_offset_y;
 
 public:
-    Controller(Model& m) : model(m)
+    Controller(View& v, Model& m) : view(v), model(m)
     {
         dragging = false; dragged_node = nullptr; offset_x = 0; offset_y = 0; original_x = 0; original_y = 0; new_node_dragged = false; delete_mode = false;
-        start_wire_node = nullptr; wiring_mode = false; waypoint_offset_x = 0; waypoint_offset_y = 0;
+        start_wire_node = nullptr; end_wire_node = nullptr; wiring_mode = false;
     }
 
     void handle_event(SDL_Event& event)
@@ -533,14 +536,11 @@ public:
             }
             else
             {
-                for (auto& wire : model.get_wires())
-                {
-                    for (size_t i = 0; i < wire->waypoints.size(); ++i)
-                    {
+                for (auto& wire : model.get_wires()) {
+                    for (size_t i = 0; i < wire->waypoints.size(); ++i) {
                         auto& wp = wire->waypoints[i];
-                        if (abs(mouse_x - wp.x) < 5 && abs(mouse_y - wp.y) < 5)
-                        {
-                            wire->selected_waypoint = (int)i;
+                        if (abs(mouse_x - wp.x) < 5 && abs(mouse_y - wp.y) < 5) {
+                            wire->selected_waypoint = i;
                             dragging_waypoint = true;
                             waypoint_offset_x = mouse_x - wp.x;
                             waypoint_offset_y = mouse_y - wp.y;
@@ -583,14 +583,12 @@ public:
             {
                 model.cursor_pos_wiring(mouseX, mouseY);
             }
-            else if (dragging_waypoint)
-            {
-                for (auto& wire : model.get_wires())
-                {
+            else if (dragging_waypoint) {
+                for (auto& wire : model.get_wires()) {
                     if (wire->selected_waypoint != -1) {
-                        auto& waypoint = wire->waypoints[wire->selected_waypoint];
-                        waypoint.x = event.motion.x - waypoint_offset_x;
-                        waypoint.y = event.motion.y - waypoint_offset_y;
+                        auto& wp = wire->waypoints[wire->selected_waypoint];
+                        wp.x = event.motion.x - waypoint_offset_x;
+                        wp.y = event.motion.y - waypoint_offset_y;
                     }
                 }
             }
@@ -599,6 +597,7 @@ public:
         {
             if (dragging)
             {
+                int mouse_x = event.button.x;
                 int mouse_y = event.button.y;
                 bool overlapping = false;
                 SDL_Rect new_node_rect{dragged_node->x, dragged_node->y, 100, 50};
@@ -680,7 +679,7 @@ public:
 
 // int main ============================================================================================================
 
-int main()
+int main(int argc, char* argv[])
 {
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("AHA's Node Viewer",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,1800, 950,SDL_WINDOW_SHOWN);
@@ -692,7 +691,7 @@ int main()
     // main loop variables
     Model model;
     View view(renderer, font);
-    Controller controller(model);
+    Controller controller(view, model);
 
     bool running = true;
     SDL_Event event;
@@ -705,11 +704,13 @@ int main()
             {
                 running = false;
             }
+
             controller.handle_event(event);
-        }
+
+        }// poll event
         view.render(model);
         SDL_Delay(16);
-    }
+    }// main loop
 
 // End Program =========================================================================================================
     SDL_DestroyRenderer(renderer);
