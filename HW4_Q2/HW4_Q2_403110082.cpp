@@ -273,11 +273,36 @@ public:
         int end_x = model.get_wiring_x();
         int end_y = model.get_wiring_y();
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderDrawLine(renderer, start_x, start_y, end_x, end_y);
+        //SDL_RenderDrawLine(renderer, start_x, start_y, end_x, end_y);
+        // Notice: this part is Completely copied from CHAT_GPT!!!
+        float x0 = start_x;
+        float y0 = start_y;
+        float x1 = end_x;
+        float y1 = end_y;
+
+        float cx0 = x0 + (x1 - x0) / 2;
+        float cy0 = y0;
+        float cx1 = x0 + (x1 - x0) / 2;
+        float cy1 = y1;
+
+        const int STEPS = 100;
+        for (int i = 0; i < STEPS; ++i)
+        {
+            float t1 = i / (float)STEPS;
+            float t2 = (i + 1) / (float)STEPS;
+
+            float xa = (1 - t1) * (1 - t1) * (1 - t1) * x0 + 3 * (1 - t1) * (1 - t1) * t1 * cx0 + 3 * (1 - t1) * t1 * t1 * cx1 + t1 * t1 * t1 * x1;
+            float ya = (1 - t1) * (1 - t1) * (1 - t1) * y0 + 3 * (1 - t1) * (1 - t1) * t1 * cy0 + 3 * (1 - t1) * t1 * t1 * cy1 + t1 * t1 * t1 * y1;
+
+            float xb = (1 - t2) * (1 - t2) * (1 - t2) * x0 + 3 * (1 - t2) * (1 - t2) * t2 * cx0 + 3 * (1 - t2) * t2 * t2 * cx1 + t2 * t2 * t2 * x1;
+            float yb = (1 - t2) * (1 - t2) * (1 - t2) * y0 + 3 * (1 - t2) * (1 - t2) * t2 * cy0 + 3 * (1 - t2) * t2 * t2 * cy1 + t2 * t2 * t2 * y1;
+
+            SDL_RenderDrawLine(renderer, (int)xa, (int)ya, (int)xb, (int)yb);
+        }
     }
     void render_wires(const Model& model)
     {
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_SetRenderDrawColor(renderer, 185, 115, 51, 255);
         for (auto& wire: model.get_wires())
         {
         // Notice: this part is Completely copied from CHAT_GPT!!!
@@ -291,7 +316,7 @@ public:
             float cx1 = x0 + (x1 - x0) / 2;
             float cy1 = y1;
 
-            const int STEPS = 30;
+            const int STEPS = 100;
             for (int i = 0; i < STEPS; ++i)
             {
                 float t1 = i / (float)STEPS;
@@ -305,6 +330,11 @@ public:
 
                 SDL_RenderDrawLine(renderer, (int)xa, (int)ya, (int)xb, (int)yb);
             }
+            // end of GPT!!!
+            SDL_Rect input_port{wire->from_x, wire->from_y, 4, 4};
+            SDL_RenderFillRect(renderer, &input_port);
+            SDL_Rect output_port{wire->to_x, wire->to_y, 4, 4};
+            SDL_RenderFillRect(renderer, &output_port);
         }
     }
 };
@@ -485,7 +515,9 @@ public:
             for (auto& node: model.get_nodes())
             {
                 SDL_Rect current_node{node->x, node->y, 100, 50};
-                if (click_in_rect(mouse_x, mouse_y, current_node) && model.get_wiring_start_node()->get_active_output_count() != 0)
+                if (click_in_rect(mouse_x, mouse_y, current_node) && model.get_wiring_start_node()->get_active_output_count() != 0 && node->get_active_input_count() != 0
+                    && !(node->type == Node_Type::Peg && model.get_wiring_start_node()->type != Node_Type::Peg) && !(node->type == Node_Type::Composite && model.get_wiring_start_node()->type == Node_Type::Peg)
+                    && node != model.get_wiring_start_node())
                 {
                     model.create_wire(model.get_wiring_start_node()->x + (10 - model.get_wiring_start_node()->get_active_output_count()) * 10, model.get_wiring_start_node()->y + 50, node->x + 50, node->y);
                     cout << "Wired Up!!!" << endl;
