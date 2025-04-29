@@ -23,18 +23,29 @@ bool rects_overlap(const SDL_Rect& a, const SDL_Rect& b)
 
 enum class Node_Type { Drawing, Peg, Composite };
 class Node;
-class Wire;
 
 struct way_point
 {
     int x, y;
 };
 
+struct Wire
+{
+    int from_x;
+    int from_y;
+    int to_x;
+    int to_y;
+    vector<way_point> way_points;
+
+    Wire(int fx, int fy, int tx, int ty) : from_x(fx), from_y(fy), to_x(tx), to_y(ty) {}
+};
 
 class Node
 {
     int active_input_count = 0;
     int active_output_count = 10;
+    vector<Wire*> input_wires;   // Wires coming into this node
+    vector<Wire*> output_wires;  // Wires going out from this node
 public:
     int x, y;
     Node_Type type;
@@ -50,22 +61,33 @@ public:
             active_input_count = 10;
         }
     }
+    void add_input_wire(Wire* wire) { input_wires.push_back(wire); }
+    void add_output_wire(Wire* wire) { output_wires.push_back(wire); }
+    const vector<Wire*>& get_input_wires() const { return input_wires; }
+    const vector<Wire*>& get_output_wires() const { return output_wires; }
+    void set_position(int newX, int newY) {
+        x = newX;
+        y = newY;
+
+        // Update all output wires (where this node is the source)
+        for (Wire* wire : output_wires) {
+            wire->from_x = newX;
+            wire->from_y = newY;
+        }
+
+        // Update all input wires (where this node is the destination)
+        for (Wire* wire : input_wires) {
+            wire->to_x = newX;
+            wire->to_y = newY;
+        }
+    }
     int get_active_input_count() const {return active_input_count;}
     int get_active_output_count() const {return active_output_count;}
     void use_input() {active_input_count--;}
     void use_output() {active_output_count--;}
 };
 
-struct Wire
-{
-    int from_x;
-    int from_y;
-    int to_x;
-    int to_y;
-    vector<way_point> way_points;
 
-    Wire(int fx, int fy, int tx, int ty) : from_x(fx), from_y(fy), to_x(tx), to_y(ty) {}
-};
 
 
 class Model
@@ -92,10 +114,15 @@ public:
         return node;
     }
 
-    Wire* create_wire(int from_x, int from_y, int to_x, int to_y)
+    Wire* create_wire(Node* from_node, Node* to_node)
     {
-        Wire* wire = new Wire(from_x, from_y, to_x, to_y);
+        Wire* wire = new Wire(from_node->x, from_node->y, to_node->x, to_node->y);
         wires.push_back(wire);
+
+        // Connect the wire to both nodes
+        from_node->add_output_wire(wire);
+        to_node->add_input_wire(wire);
+
         return wire;
     }
 
@@ -127,6 +154,17 @@ public:
 
     const vector<Node*>& get_nodes() const { return nodes; }
     const vector<Wire*>& get_wires() const { return wires; }
+private:
+    Node* find_node_by_position(int x, int y)
+    {
+        for (Node* node : nodes) {
+            if (node->x == x && node->y == y)
+            {
+                return node;
+            }
+        }
+        return nullptr;
+    }
 };
 
 // View ================================================================================================================
@@ -463,6 +501,8 @@ public:
             {
                 dragged_node->x = mouseX - offset_x;
                 dragged_node->y = mouseY - offset_y;
+                // When you move a node in your code:
+                dragged_node->set_position(mouseX, mouseY);
                 //cout << "Dragging Detected" << endl;
             }
             else if (wiring_mode)
@@ -512,26 +552,39 @@ public:
         {
             int mouse_x = event.button.x;
             int mouse_y = event.button.y;
+            Node* wiring_start_node = model.get_wiring_start_node();
+
             for (auto& node: model.get_nodes())
             {
                 SDL_Rect current_node{node->x, node->y, 100, 50};
-                if (click_in_rect(mouse_x, mouse_y, current_node) && model.get_wiring_start_node()->get_active_output_count() != 0 && node->get_active_input_count() != 0
-                    && !(node->type == Node_Type::Peg && model.get_wiring_start_node()->type != Node_Type::Peg) && !(node->type == Node_Type::Composite && model.get_wiring_start_node()->type == Node_Type::Peg)
-                    && node != model.get_wiring_start_node())
+                if (click_in_rect(mouse_x, mouse_y, current_node) &&
+                    wiring_start_node->get_active_output_count() != 0 &&
+                    node->get_active_input_count() != 0 &&
+                    !(node->type == Node_Type::Peg && wiring_start_node->type != Node_Type::Peg) &&
+                    !(node->type == Node_Type::Composite && wiring_start_node->type == Node_Type::Peg) &&
+                    node != wiring_start_node)
                 {
-                    model.create_wire(model.get_wiring_start_node()->x + (10 - model.get_wiring_start_node()->get_active_output_count()) * 10, model.get_wiring_start_node()->y + 50, node->x + 50, node->y);
+                    // Calculate connection points
+                    int from_x = wiring_start_node->x + (10 - wiring_start_node->get_active_output_count()) * 10;
+                    int from_y = wiring_start_node->y + 50;
+                    int to_x = node->x + 50;
+                    int to_y = node->y;
+
+                    // Create wire between nodes (this will automatically add it to both nodes' wire lists)
+                    model.create_wire(wiring_start_node, node);
+
                     cout << "Wired Up!!!" << endl;
-                    model.get_wiring_start_node()->use_output();
+                    wiring_start_node->use_output();
                     node->use_input();
                 }
             }
+
             if (wiring_mode)
             {
                 wiring_mode = false;
                 model.switch_wiring_mode(false);
             }
-        }
-    }
+        }    }
 };
 
 
