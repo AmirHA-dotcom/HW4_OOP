@@ -681,7 +681,7 @@ public:
 
 // int main ============================================================================================================
 
-int main()
+int main(int argc, char* argv[])
 {
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("AHA's Node Viewer",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,1800, 950,SDL_WINDOW_SHOWN);
